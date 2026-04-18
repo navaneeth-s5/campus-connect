@@ -11,22 +11,22 @@ import { FACILITIES } from "@/types";
 const Dashboard = () => {
   const { user } = useAuth();
   const { bookings } = useBookings();
-  if (!user) return null;
 
   const myBookings = useMemo(
-    () => bookings.filter((b) => b.userId === user.id).sort((a, b) => b.createdAt - a.createdAt),
-    [bookings, user.id]
+    () => bookings.filter((b) => b.userId === user?.id).sort((a, b) => b.createdAt - a.createdAt),
+    [bookings, user?.id]
   );
 
   const stats = useMemo(() => {
-    const mine = bookings.filter((b) => b.userId === user.id);
+    const mine = bookings.filter((b) => b.userId === user?.id);
     return {
       total: mine.length,
       pending: mine.filter((b) => b.status === "pending").length,
       approved: mine.filter((b) => b.status === "approved").length,
     };
-  }, [bookings, user.id]);
+  }, [bookings, user?.id]);
 
+  if (!user) return null;
   const today = new Date().toISOString().slice(0, 10);
   const todayActive = bookings.filter((b) => b.date === today && b.status !== "rejected");
 

@@ -10,12 +10,13 @@ import { toast } from "sonner";
 const MyBookings = () => {
   const { user } = useAuth();
   const { bookings, deleteBooking } = useBookings();
-  if (!user) return null;
 
   const mine = useMemo(
-    () => bookings.filter((b) => b.userId === user.id).sort((a, b) => b.createdAt - a.createdAt),
-    [bookings, user.id]
+    () => bookings.filter((b) => b.userId === user?.id).sort((a, b) => b.createdAt - a.createdAt),
+    [bookings, user?.id]
   );
+
+  if (!user) return null;
 
   return (
     <AppShell>
