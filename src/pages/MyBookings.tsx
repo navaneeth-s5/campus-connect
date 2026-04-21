@@ -58,8 +58,8 @@ const MyBookings = () => {
                       <Button
                         size="sm"
                         variant="ghost"
-                        onClick={() => {
-                          deleteBooking(b.id);
+                        onClick={async () => {
+                          await deleteBooking(b.id);
                           toast.success("Booking removed");
                         }}
                       >

@@ -108,8 +108,8 @@ const AdminPanel = () => {
                               <Button
                                 size="sm"
                                 className="bg-success hover:bg-success/90 text-success-foreground"
-                                onClick={() => {
-                                  setStatus(b.id, "approved");
+                                onClick={async () => {
+                                  await setStatus(b.id, "approved");
                                   toast.success("Booking approved");
                                 }}
                               >
@@ -120,8 +120,8 @@ const AdminPanel = () => {
                               <Button
                                 size="sm"
                                 variant="destructive"
-                                onClick={() => {
-                                  setStatus(b.id, "rejected");
+                                onClick={async () => {
+                                  await setStatus(b.id, "rejected");
                                   toast.success("Booking rejected");
                                 }}
                               >

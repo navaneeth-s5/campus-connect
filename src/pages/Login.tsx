@@ -1,6 +1,6 @@
 import { FormEvent, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { GraduationCap, ShieldCheck, BookOpen, Users } from "lucide-react";
+import { Building, ShieldCheck, BookOpen, Users } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,10 +16,10 @@ const Login = () => {
   const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
-  const handleSubmit = (e: FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
-    const result = login(email, password, role);
+    const result = await login(email, password, role);
     setSubmitting(false);
     if (!result.ok) {
       toast.error(result.error || "Login failed");
@@ -36,37 +36,42 @@ const Login = () => {
   ];
 
   return (
-    <div className="min-h-screen grid lg:grid-cols-2">
-      <div className="hidden lg:flex flex-col justify-between bg-gradient-hero text-primary-foreground p-12">
+    <div className="relative min-h-screen overflow-hidden">
+      <div className="absolute inset-0 bg-slate-950/80" />
+      <div className="relative min-h-screen grid lg:grid-cols-2">
+      <div className="hidden lg:flex flex-col justify-between bg-slate-950/50 text-white p-12 backdrop-blur-sm">
         <div className="flex items-center gap-3">
           <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-white/15 backdrop-blur">
-            <GraduationCap className="h-6 w-6" />
+            <Building className="h-6 w-6" />
           </div>
-          <div className="font-bold text-lg">Campus FMS</div>
+          <div>
+            <div className="font-bold text-lg">KMCT IETM CAMPUS</div>
+            <div className="text-xs uppercase tracking-[0.3em] text-white/70">Facility Management</div>
+          </div>
         </div>
         <div className="space-y-5">
-          <h1 className="text-4xl font-bold leading-tight">
+          <h1 className="text-4xl font-bold leading-tight text-white">
             Streamline your college facility bookings.
           </h1>
-          <p className="text-primary-foreground/80 text-lg max-w-md">
+          <p className="text-white/80 text-lg max-w-md">
             Reserve labs, the seminar hall, or schedule a Principal appointment — all from a single, modern dashboard.
           </p>
           <div className="grid grid-cols-3 gap-3 pt-4 max-w-md">
             {["Lab 1", "Lab 2", "Lab 3", "Seminar Hall", "Principal"].map((f) => (
-              <div key={f} className="rounded-md bg-white/10 backdrop-blur px-3 py-2 text-xs font-medium text-center">
+              <div key={f} className="rounded-md bg-white/10 backdrop-blur px-3 py-2 text-xs font-medium text-center text-white/90">
                 {f}
               </div>
             ))}
           </div>
         </div>
-        <p className="text-xs text-primary-foreground/60">© Campus Facility Management System</p>
+        <p className="text-xs text-white/60">© KMCT IETM CAMPUS</p>
       </div>
 
       <div className="flex items-center justify-center p-6 sm:p-10">
         <div className="w-full max-w-md space-y-7">
           <div className="lg:hidden flex items-center gap-2">
-            <GraduationCap className="h-6 w-6 text-primary" />
-            <span className="font-bold">Campus FMS</span>
+            <Building className="h-6 w-6 text-primary" />
+            <span className="font-bold">KMCT IETM CAMPUS</span>
           </div>
           <div>
             <h2 className="text-3xl font-bold">Sign in</h2>
@@ -137,6 +142,7 @@ const Login = () => {
             </div>
           )}
         </div>
+      </div>
       </div>
     </div>
   );

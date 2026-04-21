@@ -48,12 +48,12 @@ const BookFacility = () => {
   if (!user) return null;
   const isPrincipal = facility === "Principal Appointment";
 
-  const handleSubmit = (e: FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (!purpose.trim()) return toast.error("Please describe the purpose");
     if (isPrincipal && !reason.trim()) return toast.error("Reason for visit is required");
 
-    const result = createBooking({
+    const result = await createBooking({
       userId: user.id,
       userName: user.name,
       userRole: user.role,

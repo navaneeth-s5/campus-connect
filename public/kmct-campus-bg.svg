@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 800">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#3b82f6" />
+      <stop offset="100%" stop-color="#0f172a" />
+    </linearGradient>
+    <linearGradient id="building" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.9" />
+      <stop offset="100%" stop-color="#cbd5e1" stop-opacity="0.7" />
+    </linearGradient>
+    <linearGradient id="light" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#f7fee7" stop-opacity="0.5" />
+      <stop offset="100%" stop-color="#fef3c7" stop-opacity="0.05" />
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="800" fill="url(#sky)" />
+  <path d="M0 560h1200v240H0z" fill="#0f172a" />
+  <path d="M120 520h160v240H120zM320 440h160v320H320zM560 480h160v280H560zM800 400h160v360H800zM1040 520h120v240H1040z" fill="url(#building)" />
+  <path d="M160 520h80v-40h-80zM360 440h80v-40h-80zM600 480h80v-40h-80zM840 400h80v-40h-80zM1060 520h40v-40h-40z" fill="#0f172a" opacity="0.36" />
+  <circle cx="200" cy="220" r="95" fill="url(#light)" />
+  <circle cx="200" cy="220" r="55" fill="#eff6ff" opacity="0.45" />
+  <text x="50%" y="135" text-anchor="middle" fill="#ffffff" font-family="Inter, Arial, sans-serif" font-size="52" font-weight="700">KMCT IETM CAMPUS</text>
+  <text x="50%" y="190" text-anchor="middle" fill="#dbeafe" font-family="Inter, Arial, sans-serif" font-size="28" letter-spacing="0.08em">College Facility Management</text>
+  <ellipse cx="600" cy="720" rx="560" ry="80" fill="#ffffff" opacity="0.06" />
+</svg>

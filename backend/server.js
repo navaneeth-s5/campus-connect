@@ -1,0 +1,54 @@
+require('dotenv').config();
+const express = require('express');
+const mongoose = require('mongoose');
+const cors = require('cors');
+
+const authRoutes = require('./routes/auth');
+const bookingRoutes = require('./routes/bookings');
+
+const app = express();
+
+// Middleware
+app.use(cors()); // Allow all origins for network testing
+app.use(express.json());
+
+// Routes
+app.use('/api/auth', authRoutes);
+app.use('/api/bookings', bookingRoutes);
+
+const PORT = process.env.PORT || 5000;
+const { MongoMemoryServer } = require('mongodb-memory-server');
+const fs = require('fs');
+const path = require('path');
+
+async function startServer() {
+  try {
+    const dataPath = path.join(__dirname, 'mongo_data');
+    if (!fs.existsSync(dataPath)) {
+      fs.mkdirSync(dataPath, { recursive: true });
+    }
+
+    // Start MongoDB Memory Server with persistent dbPath and fixed port
+    const mongod = await MongoMemoryServer.create({
+      instance: {
+        port: 27017,
+        dbPath: dataPath,
+        storageEngine: 'wiredTiger'
+      }
+    });
+
+    const MONGO_URI = mongod.getUri();
+    console.log(`Embedded MongoDB started at ${MONGO_URI} with persistent data in ${dataPath}`);
+
+    await mongoose.connect(MONGO_URI);
+    console.log('Connected to MongoDB');
+
+    app.listen(PORT, '0.0.0.0', () => {
+      console.log(`Server running on http://0.0.0.0:${PORT}`);
+    });
+  } catch (err) {
+    console.error('MongoDB connection error:', err);
+  }
+}
+
+startServer();

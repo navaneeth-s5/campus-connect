@@ -1,6 +1,6 @@
 import { FormEvent, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { GraduationCap, BookOpen, Users } from "lucide-react";
+import { Building, BookOpen, GraduationCap, Users } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,9 +16,9 @@ const Signup = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
-  const handleSubmit = (e: FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    const res = signup(name, email, password, role);
+    const res = await signup(name, email, password, role);
     if (!res.ok) {
       toast.error(res.error || "Signup failed");
       return;
@@ -28,15 +28,16 @@ const Signup = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-secondary via-background to-secondary p-6">
-      <div className="w-full max-w-md bg-card rounded-xl shadow-elegant border p-8 space-y-6">
-        <div className="flex items-center gap-2">
-          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-primary text-primary-foreground">
-            <GraduationCap className="h-5 w-5" />
+    <div className="relative min-h-screen flex items-center justify-center p-6">
+      <div className="absolute inset-0 bg-slate-950/80" />
+      <div className="relative w-full max-w-md bg-white/95 rounded-3xl shadow-elegant border border-white/20 p-8 space-y-6 backdrop-blur">
+        <div className="flex items-center gap-3">
+          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-lg">
+            <Building className="h-6 w-6" />
           </div>
           <div>
-            <div className="font-bold">Campus FMS</div>
-            <div className="text-xs text-muted-foreground">Create your account</div>
+            <div className="text-xs uppercase tracking-[0.3em] text-primary/90">KMCT IETM CAMPUS</div>
+            <div className="text-2xl font-bold">Create your account</div>
           </div>
         </div>
 
