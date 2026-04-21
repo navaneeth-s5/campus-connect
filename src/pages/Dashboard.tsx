@@ -1,16 +1,22 @@
-import { useMemo } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { Link } from "react-router-dom";
+import axios from "axios";
 import { CalendarPlus, ClipboardList, FlaskConical, MapPin, UserCog } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { useAuth } from "@/context/AuthContext";
 import { useBookings } from "@/context/BookingContext";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Button } from "@/components/ui/button";
-import { FACILITIES } from "@/types";
+import { toast } from "sonner";
 
 const Dashboard = () => {
   const { user } = useAuth();
   const { bookings } = useBookings();
+  const [facilities, setFacilities] = useState<string[]>([]);
+
+  useEffect(() => {
+    axios.get('/api/facilities').then(res => setFacilities(res.data)).catch(() => {});
+  }, []);
 
   const myBookings = useMemo(
     () => bookings.filter((b) => b.userId === user?.id).sort((a, b) => b.createdAt - a.createdAt),
@@ -63,7 +69,7 @@ const Dashboard = () => {
         <section>
           <h2 className="text-lg font-semibold mb-3">Facilities</h2>
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {FACILITIES.map((f) => {
+            {facilities.map((f) => {
               const Icon = f === "Principal Appointment" ? UserCog : f === "Seminar Hall" ? MapPin : FlaskConical;
               const todayCount = todayActive.filter((b) => b.facility === f).length;
               return (
@@ -114,6 +120,28 @@ const Dashboard = () => {
               ))}
             </div>
           )}
+        </section>
+
+        <section className="mt-8">
+          <h2 className="text-lg font-semibold mb-3">Academic Resources</h2>
+          <div className="grid sm:grid-cols-2 md:grid-cols-4 gap-4">
+             <a href="#" onClick={(e) => { e.preventDefault(); toast.info("Opening E-Library Portal..."); }} className="p-4 rounded-xl border bg-card hover:bg-muted/50 transition-colors flex flex-col items-center justify-center text-center gap-2">
+               <div className="p-3 rounded-full bg-blue-500/10 text-blue-500"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></svg></div>
+               <span className="font-semibold text-sm">E-Library</span>
+             </a>
+             <a href="#" onClick={(e) => { e.preventDefault(); toast.info("Opening Learning Management System..."); }} className="p-4 rounded-xl border bg-card hover:bg-muted/50 transition-colors flex flex-col items-center justify-center text-center gap-2">
+               <div className="p-3 rounded-full bg-purple-500/10 text-purple-500"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M7 7h10"/><path d="M7 12h10"/><path d="M7 17h10"/></svg></div>
+               <span className="font-semibold text-sm">Moodle LMS</span>
+             </a>
+             <a href="#" onClick={(e) => { e.preventDefault(); toast.info("Downloading Academic Calendar..."); }} className="p-4 rounded-xl border bg-card hover:bg-muted/50 transition-colors flex flex-col items-center justify-center text-center gap-2">
+               <div className="p-3 rounded-full bg-orange-500/10 text-orange-500"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/><path d="M8 14h.01"/><path d="M12 14h.01"/><path d="M16 14h.01"/><path d="M8 18h.01"/><path d="M12 18h.01"/><path d="M16 18h.01"/></svg></div>
+               <span className="font-semibold text-sm">Calendar</span>
+             </a>
+             <a href="#" onClick={(e) => { e.preventDefault(); toast.info("Opening Grievance Redressal Portal..."); }} className="p-4 rounded-xl border bg-card hover:bg-muted/50 transition-colors flex flex-col items-center justify-center text-center gap-2">
+               <div className="p-3 rounded-full bg-red-500/10 text-red-500"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg></div>
+               <span className="font-semibold text-sm">Help Desk</span>
+             </a>
+          </div>
         </section>
       </div>
     </AppShell>

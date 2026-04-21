@@ -1,6 +1,7 @@
 import { createContext, ReactNode, useContext, useEffect, useState } from "react";
-import { Role, User } from "@/types";
+import { College, Role, User } from "@/types";
 import axios from "axios";
+import { toast } from "sonner";
 
 // Interceptor to add auth token to requests
 axios.interceptors.request.use((config) => {
@@ -14,8 +15,9 @@ axios.interceptors.request.use((config) => {
 interface AuthContextValue {
   user: User | null;
   loading: boolean;
-  login: (email: string, password: string, role: Role) => Promise<{ ok: boolean; error?: string }>;
-  signup: (name: string, email: string, password: string, role: Role) => Promise<{ ok: boolean; error?: string }>;
+  login: (username: string, password: string) => Promise<{ ok: boolean; error?: string, user?: User }>;
+  signup: (name: string, college: College, rollNumber: string, department: string, course: string, password: string, role: Role) => Promise<{ ok: boolean; error?: string }>;
+  requestReset: (username: string) => Promise<{ ok: boolean; error?: string }>;
   logout: () => void;
 }
 
@@ -34,7 +36,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
       try {
         const res = await axios.get('/api/auth/me');
-        setUser({ id: res.data._id || res.data.id, name: res.data.name, email: res.data.email, role: res.data.role });
+        setUser({ id: res.data._id || res.data.id, name: res.data.name, rollNumber: res.data.rollNumber, college: res.data.college, role: res.data.role, department: res.data.department, course: res.data.course });
       } catch (err) {
         localStorage.removeItem('token');
         setUser(null);
@@ -45,25 +47,34 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     loadUser();
   }, []);
 
-  const login: AuthContextValue["login"] = async (email, password, role) => {
+  const login: AuthContextValue["login"] = async (username, password) => {
     try {
-      const res = await axios.post('/api/auth/login', { email, password, role });
+      const res = await axios.post('/api/auth/login', { username, password });
       localStorage.setItem('token', res.data.token);
       setUser(res.data.user);
-      return { ok: true };
+      return { ok: true, user: res.data.user };
     } catch (err: any) {
       return { ok: false, error: err.response?.data?.error || "Login failed" };
     }
   };
 
-  const signup: AuthContextValue["signup"] = async (name, email, password, role) => {
+  const signup: AuthContextValue["signup"] = async (name, college, rollNumber, department, course, password, role) => {
     try {
-      const res = await axios.post('/api/auth/signup', { name, email, password, role });
+      const res = await axios.post('/api/auth/signup', { name, college, rollNumber, department, course, password, role });
       localStorage.setItem('token', res.data.token);
       setUser(res.data.user);
       return { ok: true };
     } catch (err: any) {
       return { ok: false, error: err.response?.data?.error || "Signup failed" };
+    }
+  };
+
+  const requestReset: AuthContextValue["requestReset"] = async (username) => {
+    try {
+      await axios.post('/api/auth/request-reset', { username });
+      return { ok: true };
+    } catch (err: any) {
+       return { ok: false, error: err.response?.data?.error || "Failed to request reset" };
     }
   };
 
@@ -73,7 +84,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, signup, logout }}>{children}</AuthContext.Provider>
+    <AuthContext.Provider value={{ user, loading, login, signup, requestReset, logout }}>{children}</AuthContext.Provider>
   );
 };
 

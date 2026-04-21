@@ -49,9 +49,15 @@ const MyBookings = () => {
                     <td className="p-3 font-medium">{b.facility}</td>
                     <td className="p-3">{b.date}</td>
                     <td className="p-3">{b.startTime} – {b.endTime}</td>
-                    <td className="p-3 max-w-xs truncate" title={b.purpose}>
-                      {b.purpose}
-                      {b.reason && <div className="text-xs text-muted-foreground italic">Reason: {b.reason}</div>}
+                    <td className="p-3 max-w-xs" title={b.purpose}>
+                      <div className="truncate">{b.purpose}</div>
+                      {b.reason && <div className="text-xs text-muted-foreground italic truncate">Reason: {b.reason}</div>}
+                      {b.status === "approved" && b.approvedRoom && (
+                         <div className="text-xs text-success font-semibold mt-1">Scheduled at: {b.approvedTime} in {b.approvedRoom}</div>
+                      )}
+                      {b.status === "rejected" && b.declineReason && (
+                         <div className="text-xs text-destructive font-semibold mt-1">Declined: {b.declineReason}</div>
+                      )}
                     </td>
                     <td className="p-3"><StatusBadge status={b.status} /></td>
                     <td className="p-3 text-right">

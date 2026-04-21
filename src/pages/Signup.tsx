@@ -1,90 +1,107 @@
-import { FormEvent, useState } from "react";
+import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Building, BookOpen, GraduationCap, Users } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Role } from "@/types";
+import { Role, College, COLLEGES } from "@/types";
 
 const Signup = () => {
+  const [name, setName] = useState("");
+  const [rollNumber, setRollNumber] = useState("");
+  const [department, setDepartment] = useState("");
+  const [course, setCourse] = useState("");
+  const [college, setCollege] = useState<College | "">("");
+  const [password, setPassword] = useState("");
+  const [role, setRole] = useState<Role>("student");
   const { signup } = useAuth();
   const navigate = useNavigate();
-  const [role, setRole] = useState<Exclude<Role, "admin">>("student");
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
 
-  const handleSubmit = async (e: FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const res = await signup(name, email, password, role);
-    if (!res.ok) {
-      toast.error(res.error || "Signup failed");
-      return;
+    if (!college) return toast.error("Please select a college");
+    const { ok, error } = await signup(name, college as College, rollNumber, department, course, password, role);
+    if (ok) {
+      toast.success("Account created successfully!");
+      navigate("/dashboard");
+    } else {
+      toast.error(error || "Signup failed");
     }
-    toast.success("Account created!");
-    navigate("/dashboard");
   };
 
   return (
-    <div className="relative min-h-screen flex items-center justify-center p-6">
-      <div className="absolute inset-0 bg-slate-950/80" />
-      <div className="relative w-full max-w-md bg-white/95 rounded-3xl shadow-elegant border border-white/20 p-8 space-y-6 backdrop-blur">
-        <div className="flex items-center gap-3">
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-lg">
-            <Building className="h-6 w-6" />
+    <div className="flex min-h-[100dvh] bg-cover bg-center bg-fixed relative w-full" style={{ backgroundImage: `url('/kmct-campus-bg.jpg')` }}>
+      <div className="absolute inset-0 bg-black/50 backdrop-blur-[4px] pointer-events-none" />
+      <div className="flex-1 flex flex-col justify-center px-4 py-12 sm:px-6 lg:flex-none lg:px-20 xl:px-24 z-10 w-full">
+        <div className="mx-auto w-full max-w-md bg-white/95 dark:bg-slate-950/95 p-8 rounded-2xl shadow-2xl backdrop-blur-md border border-white/20 my-auto">
+          <div className="flex flex-col items-center justify-center text-center">
+            <img src="/logo.png" alt="KMCT Logo" className="h-16 mb-4 object-contain" onError={(e) => (e.currentTarget.style.display = 'none')} />
+            <h2 className="text-3xl font-bold tracking-tight text-foreground">Create account</h2>
+            <p className="mt-2 text-sm text-muted-foreground">KMCT Campus Thoongampuram</p>
           </div>
-          <div>
-            <div className="text-xs uppercase tracking-[0.3em] text-primary/90">KMCT IETM CAMPUS</div>
-            <div className="text-2xl font-bold">Create your account</div>
+
+          <div className="mt-6">
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="space-y-1.5">
+                <Label htmlFor="college">College Selection <span className="text-destructive">*</span></Label>
+                <Select value={college} onValueChange={(v) => setCollege(v as College)} required>
+                  <SelectTrigger><SelectValue placeholder="Select your college" /></SelectTrigger>
+                  <SelectContent>
+                     {COLLEGES.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="name">Full Name <span className="text-destructive">*</span></Label>
+                <Input id="name" required placeholder="John Doe" value={name} onChange={(e) => setName(e.target.value)} />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                 <div className="space-y-1.5">
+                    <Label htmlFor="rollNumber">{role === 'student' ? 'Roll Number' : 'Username / Faculty ID'} <span className="text-destructive">*</span></Label>
+                    <Input id="rollNumber" required placeholder={role === 'student' ? "Ex: CS2021" : "Ex: FAC001"} value={rollNumber} onChange={(e) => setRollNumber(e.target.value)} />
+                 </div>
+                 <div className="space-y-1.5">
+                    <Label htmlFor="role">Role <span className="text-destructive">*</span></Label>
+                    <Select value={role} onValueChange={(v: Role) => setRole(v)}>
+                      <SelectTrigger><SelectValue placeholder="Select role" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="student">Student</SelectItem>
+                        <SelectItem value="faculty">Faculty</SelectItem>
+                      </SelectContent>
+                    </Select>
+                 </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                 <div className="space-y-1.5">
+                    <Label htmlFor="department">Department <span className="text-destructive">*</span></Label>
+                    <Input id="department" required placeholder="Computer Science" value={department} onChange={(e) => setDepartment(e.target.value)} />
+                 </div>
+                 <div className="space-y-1.5">
+                    <Label htmlFor="course">Course <span className="text-destructive">*</span></Label>
+                    <Input id="course" required placeholder="B.Tech" value={course} onChange={(e) => setCourse(e.target.value)} />
+                 </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="password">Password <span className="text-destructive">*</span></Label>
+                <Input id="password" type="password" required value={password} onChange={(e) => setPassword(e.target.value)} />
+              </div>
+
+              <Button type="submit" className="w-full mt-2">Sign up</Button>
+            </form>
+          </div>
+
+          <div className="mt-4 text-center text-sm">
+            <Link to="/login" className="font-medium text-primary hover:underline">
+               Already have an account? Sign in
+            </Link>
           </div>
         </div>
-
-        <div className="grid grid-cols-2 gap-2">
-          {(["student", "faculty"] as const).map((r) => {
-            const Icon = r === "student" ? BookOpen : Users;
-            const active = role === r;
-            return (
-              <button
-                key={r}
-                type="button"
-                onClick={() => setRole(r)}
-                className={`flex items-center justify-center gap-2 rounded-lg border-2 p-3 text-sm font-semibold transition-all ${
-                  active ? "border-primary bg-primary/5 text-primary" : "border-border text-muted-foreground"
-                }`}
-              >
-                <Icon className="h-4 w-4" />
-                {r.charAt(0).toUpperCase() + r.slice(1)}
-              </button>
-            );
-          })}
-        </div>
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-1.5">
-            <Label htmlFor="name">Full name</Label>
-            <Input id="name" value={name} onChange={(e) => setName(e.target.value)} required />
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="email">Email</Label>
-            <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="password">Password</Label>
-            <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
-          </div>
-          <Button type="submit" className="w-full bg-gradient-primary shadow-elegant">
-            Create account
-          </Button>
-        </form>
-
-        <p className="text-sm text-center text-muted-foreground">
-          Already have an account?{" "}
-          <Link to="/login" className="text-primary font-semibold hover:underline">
-            Sign in
-          </Link>
-        </p>
       </div>
     </div>
   );

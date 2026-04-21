@@ -1,5 +1,6 @@
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import axios from "axios";
 import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -31,6 +32,11 @@ const BookFacility = () => {
   const [endTime, setEndTime] = useState("10:00");
   const [purpose, setPurpose] = useState("");
   const [reason, setReason] = useState("");
+  const [facilities, setFacilities] = useState<string[]>([]);
+
+  useEffect(() => {
+    axios.get('/api/facilities').then(res => setFacilities(res.data)).catch(() => {});
+  }, []);
 
   const dayBookings = useMemo(
     () =>
@@ -57,6 +63,7 @@ const BookFacility = () => {
       userId: user.id,
       userName: user.name,
       userRole: user.role,
+      userCollege: user.college,
       facility,
       date,
       startTime,
@@ -87,7 +94,7 @@ const BookFacility = () => {
               <Select value={facility} onValueChange={(v) => setFacility(v as Facility)}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  {FACILITIES.map((f) => (
+                  {facilities.map((f) => (
                     <SelectItem key={f} value={f}>{f}</SelectItem>
                   ))}
                 </SelectContent>

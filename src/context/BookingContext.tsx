@@ -1,13 +1,15 @@
-import { createContext, ReactNode, useCallback, useContext, useEffect, useState } from "react";
+import { createContext, ReactNode, useContext, useEffect, useState } from "react";
 import { Booking, BookingStatus } from "@/types";
 import axios from "axios";
 import { toast } from "sonner";
+import { io } from "socket.io-client";
+import { useAuth } from "./AuthContext";
 
 interface BookingContextValue {
   bookings: Booking[];
   loadingBookings: boolean;
-  createBooking: (b: Omit<Booking, "id" | "status" | "createdAt">) => Promise<{ ok: boolean; error?: string }>;
-  setStatus: (id: string, status: BookingStatus) => Promise<void>;
+  createBooking: (b: Omit<Booking, "id" | "status" | "createdAt" | "approvedRoom" | "approvedTime" | "declineReason">) => Promise<{ ok: boolean; error?: string }>;
+  setStatus: (id: string, status: BookingStatus, extra?: { approvedRoom?: string; approvedTime?: string; declineReason?: string; }) => Promise<void>;
   deleteBooking: (id: string) => Promise<void>;
   refreshBookings: () => Promise<void>;
 }
@@ -17,6 +19,7 @@ const BookingContext = createContext<BookingContextValue | undefined>(undefined)
 export const BookingProvider = ({ children }: { children: ReactNode }) => {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loadingBookings, setLoadingBookings] = useState(true);
+  const { user } = useAuth();
 
   const fetchBookings = async () => {
     try {
@@ -34,7 +37,24 @@ export const BookingProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     fetchBookings();
-  }, []);
+
+    const socket = io();
+    socket.on('connect', () => {
+       if (user?.role === 'principal') socket.emit('join_role', 'principal');
+    });
+    
+    socket.on('booking_update', () => {
+       fetchBookings();
+    });
+    
+    socket.on('new_appointment', (data: any) => {
+       if (user?.role === 'principal') {
+          toast(`New Appointment Request from ${data.userName}`);
+       }
+    });
+
+    return () => { socket.disconnect(); };
+  }, [user]);
 
   const createBooking: BookingContextValue["createBooking"] = async (data) => {
     if (data.startTime >= data.endTime) return { ok: false, error: "End time must be after start time" };
@@ -47,12 +67,13 @@ export const BookingProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  const setStatus: BookingContextValue["setStatus"] = async (id, status) => {
+  const setStatus: BookingContextValue["setStatus"] = async (id, status, extra) => {
     try {
-      const res = await axios.patch(`/api/bookings/${id}/status`, { status });
+      const res = await axios.patch(`/api/bookings/${id}/status`, { status, ...extra });
       setBookings(current => current.map(b => b.id === id ? res.data : b));
     } catch (err: any) {
       toast.error(err.response?.data?.error || "Failed to update status");
+      throw err;
     }
   };
 

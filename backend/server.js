@@ -5,6 +5,7 @@ const cors = require('cors');
 
 const authRoutes = require('./routes/auth');
 const bookingRoutes = require('./routes/bookings');
+const facilityRoutes = require('./routes/facilities');
 
 const app = express();
 
@@ -15,11 +16,25 @@ app.use(express.json());
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/bookings', bookingRoutes);
+app.use('/api/facilities', facilityRoutes);
 
-const PORT = process.env.PORT || 5000;
 const { MongoMemoryServer } = require('mongodb-memory-server');
 const fs = require('fs');
 const path = require('path');
+const http = require('http');
+const { Server } = require('socket.io');
+
+const server = http.createServer(app);
+const io = new Server(server, { cors: { origin: '*' } });
+app.set('io', io);
+
+const PORT = process.env.PORT || 5000;
+
+io.on('connection', (socket) => {
+  socket.on('join_role', (role) => {
+    if (role === 'principal') socket.join('principal');
+  });
+});
 
 async function startServer() {
   try {
@@ -28,7 +43,6 @@ async function startServer() {
       fs.mkdirSync(dataPath, { recursive: true });
     }
 
-    // Start MongoDB Memory Server with persistent dbPath and fixed port
     const mongod = await MongoMemoryServer.create({
       instance: {
         port: 27017,
@@ -43,7 +57,7 @@ async function startServer() {
     await mongoose.connect(MONGO_URI);
     console.log('Connected to MongoDB');
 
-    app.listen(PORT, '0.0.0.0', () => {
+    server.listen(PORT, '0.0.0.0', () => {
       console.log(`Server running on http://0.0.0.0:${PORT}`);
     });
   } catch (err) {

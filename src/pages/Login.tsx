@@ -1,148 +1,79 @@
-import { FormEvent, useState } from "react";
+import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Building, ShieldCheck, BookOpen, Users } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Role } from "@/types";
 
 const Login = () => {
-  const { login } = useAuth();
-  const navigate = useNavigate();
-  const [role, setRole] = useState<Role>("student");
-  const [email, setEmail] = useState("");
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  const [submitting, setSubmitting] = useState(false);
+  const { login, requestReset } = useAuth();
+  const navigate = useNavigate();
 
-  const handleSubmit = async (e: FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSubmitting(true);
-    const result = await login(email, password, role);
-    setSubmitting(false);
-    if (!result.ok) {
-      toast.error(result.error || "Login failed");
-      return;
+    if (!username) return toast.error("Please enter your username");
+    const { ok, error, user } = await login(username, password);
+    
+    if (ok && user) {
+      toast.success("Welcome back!");
+      if (user.role === "admin") navigate("/admin");
+      else if (user.role === "principal") navigate("/principal");
+      else navigate("/dashboard");
+    } else {
+      toast.error(error || "Login failed");
     }
-    toast.success("Welcome back!");
-    navigate(role === "admin" ? "/admin" : "/dashboard");
   };
 
-  const roles: { id: Role; label: string; icon: typeof BookOpen }[] = [
-    { id: "student", label: "Student", icon: BookOpen },
-    { id: "faculty", label: "Faculty", icon: Users },
-    { id: "admin", label: "Admin", icon: ShieldCheck },
-  ];
+  const handleReset = async () => {
+    if (!username) {
+       return toast.error("Enter your username to request password reset.");
+    }
+    const { ok, error } = await requestReset(username);
+    if (ok) toast.success("Password reset requested. Contact your admin for new password.");
+    else toast.error(error);
+  };
 
   return (
-    <div className="relative min-h-screen overflow-hidden">
-      <div className="absolute inset-0 bg-slate-950/80" />
-      <div className="relative min-h-screen grid lg:grid-cols-2">
-      <div className="hidden lg:flex flex-col justify-between bg-slate-950/50 text-white p-12 backdrop-blur-sm">
-        <div className="flex items-center gap-3">
-          <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-white/15 backdrop-blur">
-            <Building className="h-6 w-6" />
+    <div className="flex min-h-[100dvh] bg-cover bg-center bg-fixed relative w-full" style={{ backgroundImage: `url('/kmct-campus-bg.jpg')` }}>
+      <div className="absolute inset-0 bg-black/50 backdrop-blur-[4px] pointer-events-none" />
+      <div className="flex-1 flex flex-col justify-center px-4 py-12 sm:px-6 lg:flex-none lg:px-20 xl:px-24 z-10 w-full">
+        <div className="mx-auto w-full max-w-md bg-white/95 dark:bg-slate-950/95 p-8 rounded-2xl shadow-2xl backdrop-blur-md border border-white/20 my-auto">
+          <div className="flex flex-col items-center justify-center text-center">
+            <img src="/logo.png" alt="KMCT Logo" className="h-16 mb-4 object-contain" onError={(e) => (e.currentTarget.style.display = 'none')} />
+            <h2 className="text-3xl font-bold tracking-tight text-foreground">Welcome back</h2>
+            <p className="mt-2 text-sm text-muted-foreground">Sign in to KMCT Campus Thoongampuram</p>
           </div>
-          <div>
-            <div className="font-bold text-lg">KMCT IETM CAMPUS</div>
-            <div className="text-xs uppercase tracking-[0.3em] text-white/70">Facility Management</div>
-          </div>
-        </div>
-        <div className="space-y-5">
-          <h1 className="text-4xl font-bold leading-tight text-white">
-            Streamline your college facility bookings.
-          </h1>
-          <p className="text-white/80 text-lg max-w-md">
-            Reserve labs, the seminar hall, or schedule a Principal appointment — all from a single, modern dashboard.
-          </p>
-          <div className="grid grid-cols-3 gap-3 pt-4 max-w-md">
-            {["Lab 1", "Lab 2", "Lab 3", "Seminar Hall", "Principal"].map((f) => (
-              <div key={f} className="rounded-md bg-white/10 backdrop-blur px-3 py-2 text-xs font-medium text-center text-white/90">
-                {f}
+
+          <div className="mt-8">
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="space-y-1.5">
+                <Label htmlFor="username">Username / Roll Number</Label>
+                <Input id="username" required placeholder="Enter username or roll number" value={username} onChange={(e) => setUsername(e.target.value)} />
               </div>
-            ))}
+
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="password">Password</Label>
+                  <button type="button" onClick={handleReset} className="text-xs font-semibold text-primary hover:underline">
+                    Forgot password?
+                  </button>
+                </div>
+                <Input id="password" type="password" required value={password} onChange={(e) => setPassword(e.target.value)} />
+              </div>
+
+              <Button type="submit" className="w-full mt-4">Sign in</Button>
+            </form>
+          </div>
+
+          <div className="mt-6 text-center text-sm">
+            <Link to="/signup" className="font-medium text-primary hover:underline">
+               Don't have an account? Sign up
+            </Link>
           </div>
         </div>
-        <p className="text-xs text-white/60">© KMCT IETM CAMPUS</p>
-      </div>
-
-      <div className="flex items-center justify-center p-6 sm:p-10">
-        <div className="w-full max-w-md space-y-7">
-          <div className="lg:hidden flex items-center gap-2">
-            <Building className="h-6 w-6 text-primary" />
-            <span className="font-bold">KMCT IETM CAMPUS</span>
-          </div>
-          <div>
-            <h2 className="text-3xl font-bold">Sign in</h2>
-            <p className="text-muted-foreground mt-1.5">Access your facility booking dashboard</p>
-          </div>
-
-          <div className="grid grid-cols-3 gap-2">
-            {roles.map((r) => {
-              const Icon = r.icon;
-              const active = role === r.id;
-              return (
-                <button
-                  key={r.id}
-                  type="button"
-                  onClick={() => setRole(r.id)}
-                  className={`flex flex-col items-center gap-1.5 rounded-lg border-2 p-3 text-xs font-semibold transition-all ${
-                    active
-                      ? "border-primary bg-primary/5 text-primary shadow-card"
-                      : "border-border hover:border-primary/40 text-muted-foreground"
-                  }`}
-                >
-                  <Icon className="h-4 w-4" />
-                  {r.label}
-                </button>
-              );
-            })}
-          </div>
-
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-1.5">
-              <Label htmlFor="email">{role === "admin" ? "Username" : "Email"}</Label>
-              <Input
-                id="email"
-                type={role === "admin" ? "text" : "email"}
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder={role === "admin" ? "admin" : "you@college.edu"}
-                required
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="password">Password</Label>
-              <Input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
-                required
-              />
-            </div>
-            <Button type="submit" className="w-full bg-gradient-primary shadow-elegant" disabled={submitting}>
-              Sign in as {role.charAt(0).toUpperCase() + role.slice(1)}
-            </Button>
-          </form>
-
-          {role !== "admin" && (
-            <p className="text-sm text-center text-muted-foreground">
-              No account?{" "}
-              <Link to="/signup" className="text-primary font-semibold hover:underline">
-                Create one
-              </Link>
-            </p>
-          )}
-          {role === "admin" && (
-            <div className="rounded-md border bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
-              Demo admin: <span className="font-mono font-semibold">admin / admin123</span>
-            </div>
-          )}
-        </div>
-      </div>
       </div>
     </div>
   );

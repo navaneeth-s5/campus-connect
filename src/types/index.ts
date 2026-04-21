@@ -1,14 +1,21 @@
-export type Role = "student" | "faculty" | "admin";
+export type Role = "student" | "faculty" | "admin" | "principal";
+
+export const COLLEGES = [
+  "KMCT Institute of Emerging Technology and Management",
+  "KMCT College of Allied Health Sciences",
+  "KMCT School of Design"
+] as const;
+
+export type College = typeof COLLEGES[number];
 
 export interface User {
   id: string;
   name: string;
-  email: string;
+  rollNumber: string;
+  college: College;
+  department?: string;
+  course?: string;
   role: Role;
-}
-
-export interface StoredUser extends User {
-  password: string;
 }
 
 export type Facility = "Lab 1" | "Lab 2" | "Lab 3" | "Seminar Hall" | "Principal Appointment";
@@ -22,6 +29,7 @@ export interface Booking {
   userId: string;
   userName: string;
   userRole: Role;
+  userCollege: College;
   facility: Facility;
   date: string; // YYYY-MM-DD
   startTime: string; // HH:mm
@@ -29,5 +37,8 @@ export interface Booking {
   purpose: string;
   reason?: string; // for principal appointment
   status: BookingStatus;
+  approvedRoom?: string;
+  approvedTime?: string;
+  declineReason?: string;
   createdAt: number;
 }

@@ -3,11 +3,9 @@ const router = express.Router();
 const Booking = require('../models/Booking');
 const auth = require('../middleware/auth');
 
-// Get all bookings
 router.get('/', auth, async (req, res) => {
   try {
     const bookings = await Booking.find().sort({ createdAt: -1 });
-    // Convert mongoose objects to plain objects and map _id to id
     const mappedBookings = bookings.map(b => {
       const obj = b.toObject();
       obj.id = obj._id.toString();
@@ -21,12 +19,11 @@ router.get('/', auth, async (req, res) => {
   }
 });
 
-// Create booking
 router.post('/', auth, async (req, res) => {
   try {
     const { facility, date, startTime, endTime, purpose, reason } = req.body;
     
-    // Check conflicts
+    // Global conflict check
     const conflict = await Booking.findOne({
       facility,
       date,
@@ -39,13 +36,14 @@ router.post('/', auth, async (req, res) => {
     });
 
     if (conflict) {
-      return res.status(400).json({ error: 'This slot conflicts with an existing booking' });
+      return res.status(400).json({ error: 'This facility is booked at this time across the campus.' });
     }
 
     const booking = new Booking({
       userId: req.user.id,
       userName: req.user.name,
       userRole: req.user.role,
+      userCollege: req.user.college,
       facility,
       date,
       startTime,
@@ -55,50 +53,57 @@ router.post('/', auth, async (req, res) => {
     });
 
     await booking.save();
+    
+    const io = req.app.get('io');
+    if (io) {
+      if (facility === 'Principal Appointment') {
+        io.to('principal').emit('new_appointment', { facility, userName: req.user.name });
+      }
+      io.emit('booking_update', { type: 'new' });
+    }
+
     const obj = booking.toObject();
     obj.id = obj._id.toString();
-    delete obj._id;
-    delete obj.__v;
-
     res.json(obj);
   } catch (err) {
     res.status(500).json({ error: 'Server error' });
   }
 });
 
-// Update status (Admin only)
 router.patch('/:id/status', auth, async (req, res) => {
-  if (req.user.role !== 'admin') {
+  if (req.user.role !== 'admin' && req.user.role !== 'principal') {
     return res.status(403).json({ error: 'Unauthorized' });
   }
-
   try {
-    const { status } = req.body;
-    const booking = await Booking.findByIdAndUpdate(req.params.id, { status }, { new: true });
+    const { status, approvedRoom, approvedTime, declineReason } = req.body;
+    const booking = await Booking.findByIdAndUpdate(req.params.id, { status, approvedRoom, approvedTime, declineReason }, { new: true });
     if (!booking) return res.status(404).json({ error: 'Booking not found' });
     
+    const io = req.app.get('io');
+    if (io) io.emit('booking_update', { type: 'status_changed', bookingId: booking._id });
+
     const obj = booking.toObject();
     obj.id = obj._id.toString();
-    delete obj._id;
-    delete obj.__v;
-    
     res.json(obj);
   } catch (err) {
     res.status(500).json({ error: 'Server error' });
   }
 });
 
-// Delete booking
 router.delete('/:id', auth, async (req, res) => {
   try {
     const booking = await Booking.findById(req.params.id);
     if (!booking) return res.status(404).json({ error: 'Booking not found' });
 
-    if (req.user.role !== 'admin' && booking.userId.toString() !== req.user.id) {
+    if (req.user.role !== 'admin' && req.user.role !== 'principal' && booking.userId.toString() !== req.user.id) {
        return res.status(403).json({ error: 'Unauthorized' });
     }
 
     await Booking.findByIdAndDelete(req.params.id);
+    
+    const io = req.app.get('io');
+    if (io) io.emit('booking_update', { type: 'deleted' });
+
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: 'Server error' });

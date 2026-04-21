@@ -15,6 +15,7 @@ import MyBookings from "./pages/MyBookings.tsx";
 import AdminPanel from "./pages/AdminPanel.tsx";
 import AdminUsage from "./pages/AdminUsage.tsx";
 import NotFound from "./pages/NotFound.tsx";
+import PrincipalPanel from "./pages/PrincipalPanel.tsx";
 
 const queryClient = new QueryClient();
 
@@ -67,6 +68,14 @@ const App = () => (
                 element={
                   <ProtectedRoute roles={["admin"]}>
                     <AdminUsage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/principal"
+                element={
+                  <ProtectedRoute roles={["principal"]}>
+                    <PrincipalPanel />
                   </ProtectedRoute>
                 }
               />
