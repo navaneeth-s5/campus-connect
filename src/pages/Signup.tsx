@@ -71,6 +71,7 @@ const Signup = () => {
                       <SelectContent>
                         <SelectItem value="student">Student</SelectItem>
                         <SelectItem value="faculty">Faculty</SelectItem>
+                        <SelectItem value="guest">Guest</SelectItem>
                       </SelectContent>
                     </Select>
                  </div>

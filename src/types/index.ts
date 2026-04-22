@@ -1,4 +1,4 @@
-export type Role = "student" | "faculty" | "admin" | "principal";
+export type Role = "student" | "faculty" | "admin" | "principal" | "guest";
 
 export const COLLEGES = [
   "KMCT Institute of Emerging Technology and Management",
@@ -18,9 +18,14 @@ export interface User {
   role: Role;
 }
 
-export type Facility = "Lab 1" | "Lab 2" | "Lab 3" | "Seminar Hall" | "Principal Appointment";
+export type Facility = string;
 
-export const FACILITIES: Facility[] = ["Lab 1", "Lab 2", "Lab 3", "Seminar Hall", "Principal Appointment"];
+export interface IFacility {
+  _id: string;
+  name: string;
+  allowedRoles: Role[];
+  assets: any[];
+}
 
 export type BookingStatus = "pending" | "approved" | "rejected";
 

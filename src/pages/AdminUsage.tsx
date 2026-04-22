@@ -1,20 +1,26 @@
-import { useMemo } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { AppShell } from "@/components/AppShell";
 import { useBookings } from "@/context/BookingContext";
-import { FACILITIES } from "@/types";
+import axios from "axios";
 
 const AdminUsage = () => {
   const { bookings } = useBookings();
+  const [facilities, setFacilities] = useState<any[]>([]);
+
+  useEffect(() => {
+    axios.get('/api/facilities').then(res => setFacilities(res.data)).catch(() => {});
+  }, []);
 
   const stats = useMemo(() => {
-    return FACILITIES.map((f) => {
-      const all = bookings.filter((b) => b.facility === f);
+    return facilities.map((f) => {
+      const facName = typeof f === 'string' ? f : f.name;
+      const all = bookings.filter((b) => b.facility === facName);
       const approved = all.filter((b) => b.status === "approved").length;
       const pending = all.filter((b) => b.status === "pending").length;
       const rejected = all.filter((b) => b.status === "rejected").length;
-      return { facility: f, total: all.length, approved, pending, rejected };
+      return { facility: facName, total: all.length, approved, pending, rejected };
     });
-  }, [bookings]);
+  }, [bookings, facilities]);
 
   const max = Math.max(1, ...stats.map((s) => s.total));
 

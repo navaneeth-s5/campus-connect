@@ -36,6 +36,16 @@ const Login = () => {
     else toast.error(error);
   };
 
+  const handleGuestLogin = async () => {
+    const { ok, error, user } = await login("guest", "admin123");
+    if (ok && user) {
+      toast.success("Welcome, Guest!");
+      navigate("/dashboard");
+    } else {
+      toast.error(error || "Guest login failed");
+    }
+  };
+
   return (
     <div className="flex min-h-[100dvh] bg-cover bg-center bg-fixed relative w-full" style={{ backgroundImage: `url('/kmct-campus-bg.jpg')` }}>
       <div className="absolute inset-0 bg-black/50 backdrop-blur-[4px] pointer-events-none" />
@@ -65,6 +75,7 @@ const Login = () => {
               </div>
 
               <Button type="submit" className="w-full mt-4">Sign in</Button>
+              <Button type="button" variant="outline" onClick={handleGuestLogin} className="w-full mt-2">Continue as Guest</Button>
             </form>
           </div>
 

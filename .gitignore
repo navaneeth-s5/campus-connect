@@ -26,3 +26,4 @@ dist-ssr
 # Backend
 backend/mongo_data
 80
+backend/uploads/

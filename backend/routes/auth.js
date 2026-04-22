@@ -30,6 +30,12 @@ const seedDefaults = async () => {
       department: 'Executive', course: 'Executive', password: hashedPassword, role: 'principal'
     });
   }
+  if (!(await User.findOne({ rollNumber: 'guest' }))) {
+    await User.create({
+      name: 'Guest User', college: 'Global', rollNumber: 'guest',
+      department: 'Guest', course: 'Guest', password: hashedPassword, role: 'guest'
+    });
+  }
 };
 seedDefaults();
 
@@ -107,6 +113,13 @@ router.post('/approve-reset', auth, async (req, res) => {
   const hashedPassword = await bcrypt.hash(newPassword, salt);
   await User.findByIdAndUpdate(userId, { password: hashedPassword, passwordResetRequested: false });
   res.json({ success: true });
+});
+
+router.get('/faculty', auth, async (req, res) => {
+  try {
+    const faculties = await User.find({ role: 'faculty' }).select('name rollNumber department college');
+    res.json(faculties);
+  } catch(e) { res.status(500).json({ error: 'Server error' }); }
 });
 
 module.exports = router;

@@ -9,7 +9,8 @@ import {
   LogOut,
   BarChart3,
   Bell,
-  Briefcase
+  Briefcase,
+  FileText
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { cn } from "@/lib/utils";
@@ -22,11 +23,13 @@ const navByRole = {
     { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
     { to: "/book", label: "Book Facility", icon: CalendarPlus },
     { to: "/my-bookings", label: "My Bookings", icon: ListChecks },
+    { to: "/submissions", label: "Submissions", icon: FileText },
   ],
   faculty: [
     { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
     { to: "/book", label: "Book Facility", icon: CalendarPlus },
     { to: "/my-bookings", label: "My Bookings", icon: ListChecks },
+    { to: "/submissions", label: "Submissions", icon: FileText },
   ],
   admin: [
     { to: "/admin", label: "Admin Panel", icon: ShieldCheck },
@@ -34,6 +37,11 @@ const navByRole = {
   ],
   principal: [
     { to: "/principal", label: "Executive Dashboard", icon: Briefcase },
+  ],
+  guest: [
+    { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+    { to: "/book", label: "Book Facility", icon: CalendarPlus },
+    { to: "/my-bookings", label: "My Bookings", icon: ListChecks },
   ]
 } as const;
 

@@ -12,7 +12,7 @@ import { toast } from "sonner";
 const Dashboard = () => {
   const { user } = useAuth();
   const { bookings } = useBookings();
-  const [facilities, setFacilities] = useState<string[]>([]);
+  const [facilities, setFacilities] = useState<any[]>([]);
 
   useEffect(() => {
     axios.get('/api/facilities').then(res => setFacilities(res.data)).catch(() => {});
@@ -69,12 +69,16 @@ const Dashboard = () => {
         <section>
           <h2 className="text-lg font-semibold mb-3">Facilities</h2>
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {facilities.map((f) => {
-              const Icon = f === "Principal Appointment" ? UserCog : f === "Seminar Hall" ? MapPin : FlaskConical;
-              const todayCount = todayActive.filter((b) => b.facility === f).length;
+            {facilities.filter(f => {
+              if (typeof f === 'string') return true;
+              return !f.allowedRoles || (Array.isArray(f.allowedRoles) && f.allowedRoles.includes(user?.role));
+            }).map((f, i) => {
+              const facName = typeof f === 'string' ? f : (f.name || 'Unknown Facility');
+              const Icon = facName === "Principal Appointment" ? UserCog : facName === "Seminar Hall" ? MapPin : FlaskConical;
+              const todayCount = todayActive.filter((b) => b.facility === facName).length;
               return (
                 <Link
-                  key={f}
+                  key={typeof f === 'string' ? f : (f._id || i)}
                   to="/book"
                   className="group rounded-xl border bg-card p-5 shadow-card hover:shadow-elegant hover:border-primary/40 transition-all"
                 >
@@ -86,9 +90,9 @@ const Dashboard = () => {
                       {todayCount} today
                     </span>
                   </div>
-                  <div className="mt-4 font-semibold">{f}</div>
+                  <div className="mt-4 font-semibold">{facName}</div>
                   <div className="text-xs text-muted-foreground mt-0.5">
-                    {f === "Principal Appointment" ? "Schedule a meeting" : "Reserve a time slot"}
+                    {facName === "Principal Appointment" ? "Schedule a meeting" : "Reserve a time slot"}
                   </div>
                 </Link>
               );

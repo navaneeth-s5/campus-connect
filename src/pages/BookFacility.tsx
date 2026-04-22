@@ -13,7 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Facility, FACILITIES } from "@/types";
+import { Facility } from "@/types";
 import { useAuth } from "@/context/AuthContext";
 import { useBookings } from "@/context/BookingContext";
 import { hasConflict } from "@/lib/storage";
@@ -32,7 +32,7 @@ const BookFacility = () => {
   const [endTime, setEndTime] = useState("10:00");
   const [purpose, setPurpose] = useState("");
   const [reason, setReason] = useState("");
-  const [facilities, setFacilities] = useState<string[]>([]);
+  const [facilities, setFacilities] = useState<any[]>([]);
 
   useEffect(() => {
     axios.get('/api/facilities').then(res => setFacilities(res.data)).catch(() => {});
@@ -94,9 +94,14 @@ const BookFacility = () => {
               <Select value={facility} onValueChange={(v) => setFacility(v as Facility)}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  {facilities.map((f) => (
-                    <SelectItem key={f} value={f}>{f}</SelectItem>
-                  ))}
+                  {facilities.filter(f => {
+                    if (typeof f === 'string') return true;
+                    return !f.allowedRoles || (Array.isArray(f.allowedRoles) && f.allowedRoles.includes(user?.role));
+                  }).map((f, i) => {
+                    const facName = typeof f === 'string' ? f : f.name;
+                    const key = typeof f === 'string' ? f : (f._id || i);
+                    return <SelectItem key={key} value={facName}>{facName}</SelectItem>;
+                  })}
                 </SelectContent>
               </Select>
             </div>

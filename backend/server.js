@@ -6,6 +6,7 @@ const cors = require('cors');
 const authRoutes = require('./routes/auth');
 const bookingRoutes = require('./routes/bookings');
 const facilityRoutes = require('./routes/facilities');
+const submissionsRoutes = require('./routes/submissions');
 
 const app = express();
 
@@ -17,6 +18,7 @@ app.use(express.json());
 app.use('/api/auth', authRoutes);
 app.use('/api/bookings', bookingRoutes);
 app.use('/api/facilities', facilityRoutes);
+app.use('/api/submissions', submissionsRoutes);
 
 const { MongoMemoryServer } = require('mongodb-memory-server');
 const fs = require('fs');
@@ -27,6 +29,19 @@ const { Server } = require('socket.io');
 const server = http.createServer(app);
 const io = new Server(server, { cors: { origin: '*' } });
 app.set('io', io);
+
+// Serve uploads statically
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
+// Serve static frontend files (Production)
+const frontendDistPath = path.join(__dirname, '../dist');
+if (fs.existsSync(frontendDistPath)) {
+  app.use(express.static(frontendDistPath));
+  // All other GET requests not handled before will return the React app
+  app.use((req, res) => {
+    res.sendFile(path.join(frontendDistPath, 'index.html'));
+  });
+}
 
 const PORT = process.env.PORT || 5000;
 

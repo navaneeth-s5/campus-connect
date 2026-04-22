@@ -3,14 +3,18 @@ import { AppShell } from "@/components/AppShell";
 import { useBookings } from "@/context/BookingContext";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Button } from "@/components/ui/button";
-import { Check, X, Shield, Lock, Activity } from "lucide-react";
-import { Booking, COLLEGES, College } from "@/types";
+import { Check, X, Shield, Lock, Activity, Plus, Trash2, Download } from "lucide-react";
+import { Booking, COLLEGES, College, IFacility, Role } from "@/types";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import axios from "axios";
 import { toast } from "sonner";
 import { io } from "socket.io-client";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import * as XLSX from 'xlsx';
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
 
 const AdminPanel = () => {
   const { bookings, setStatus, loadingBookings } = useBookings();
@@ -18,8 +22,20 @@ const AdminPanel = () => {
 
   const [resetRequests, setResetRequests] = useState<any[]>([]);
   const [selectedCollege, setSelectedCollege] = useState<College | "All">("All");
-  const [facilities, setFacilities] = useState<string[]>([]);
+  const [facilities, setFacilities] = useState<IFacility[]>([]);
   const [newFacility, setNewFacility] = useState("");
+  const [selectedRoles, setSelectedRoles] = useState<Role[]>(['student', 'faculty', 'principal', 'guest']);
+  
+  const [selectedFacilityForAssets, setSelectedFacilityForAssets] = useState<IFacility | null>(null);
+  const [newAsset, setNewAsset] = useState({
+    purchaseDate: '',
+    vendorName: '',
+    type: '',
+    price: '',
+    warranty: '',
+    assetTag: '',
+    serialNo: ''
+  });
 
   const fetchResets = async () => {
      try {
@@ -47,13 +63,22 @@ const AdminPanel = () => {
      e.preventDefault();
      if (!newFacility.trim()) return;
      try {
-        await axios.post('/api/facilities', { name: newFacility });
+        await axios.post('/api/facilities', { name: newFacility, allowedRoles: selectedRoles });
         toast.success("Facility added!");
         setNewFacility("");
         fetchFacilities();
      } catch(err: any) {
         toast.error(err.response?.data?.error || "Failed to add facility");
      }
+  };
+
+  const handleDeleteFacility = async (id: string) => {
+    if(!confirm("Are you sure you want to delete this facility?")) return;
+    try {
+      await axios.delete(`/api/facilities/${id}`);
+      toast.success("Facility deleted");
+      fetchFacilities();
+    } catch(e) { toast.error("Failed to delete facility"); }
   };
 
   const handleApproveReset = async (userId: string) => {
@@ -66,6 +91,58 @@ const AdminPanel = () => {
      } catch(e) { toast.error("Reset failed"); }
   };
 
+  const handleAddAsset = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedFacilityForAssets) return;
+    try {
+      await axios.post(`/api/facilities/${selectedFacilityForAssets._id}/assets`, newAsset);
+      toast.success("Asset added!");
+      setNewAsset({ purchaseDate: '', vendorName: '', type: '', price: '', warranty: '', assetTag: '', serialNo: '' });
+      fetchFacilities();
+      // Update selected facility
+      const updated = facilities.find(f => f._id === selectedFacilityForAssets._id);
+      if(updated) {
+        const res = await axios.get('/api/facilities');
+        const fac = res.data.find((f: IFacility) => f._id === selectedFacilityForAssets._id);
+        setSelectedFacilityForAssets(fac);
+      }
+    } catch(err: any) {
+      toast.error(err.response?.data?.error || "Failed to add asset");
+    }
+  };
+
+  const exportAssetsExcel = (facility: IFacility) => {
+    const ws = XLSX.utils.json_to_sheet(facility.assets.map(a => ({
+      "Asset Tag": a.assetTag,
+      "Serial No": a.serialNo,
+      "Type": a.type,
+      "Vendor": a.vendorName,
+      "Purchase Date": a.purchaseDate ? new Date(a.purchaseDate).toLocaleDateString() : '',
+      "Price": a.price,
+      "Warranty": a.warranty
+    })));
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Assets");
+    XLSX.writeFile(wb, `${facility.name}_Assets.xlsx`);
+  };
+
+  const exportAssetsPDF = (facility: IFacility) => {
+    const doc = new jsPDF();
+    doc.text(`${facility.name} - Asset Details`, 14, 15);
+    const tableColumn = ["Tag", "Serial No", "Type", "Vendor", "Purchase Date", "Price", "Warranty"];
+    const tableRows = facility.assets.map(a => [
+      a.assetTag, a.serialNo, a.type, a.vendorName, 
+      a.purchaseDate ? new Date(a.purchaseDate).toLocaleDateString() : '', 
+      a.price, a.warranty
+    ]);
+    (doc as any).autoTable({
+      head: [tableColumn],
+      body: tableRows,
+      startY: 20
+    });
+    doc.save(`${facility.name}_Assets.pdf`);
+  };
+
   const analytics = useMemo(() => {
      const relevant = selectedCollege === "All" ? bookings : bookings.filter(b => b.userCollege === selectedCollege);
      const total = relevant.length;
@@ -74,18 +151,26 @@ const AdminPanel = () => {
      return { total, approved, rejected };
   }, [bookings, selectedCollege]);
 
+  const toggleRole = (role: Role) => {
+    if (selectedRoles.includes(role)) {
+      setSelectedRoles(selectedRoles.filter(r => r !== role));
+    } else {
+      setSelectedRoles([...selectedRoles, role]);
+    }
+  };
+
   return (
     <AppShell>
       <div className="space-y-6">
         <div>
           <h1 className="text-3xl font-bold">Admin Panel</h1>
-          <p className="text-muted-foreground mt-1">Manage global facilities and security.</p>
+          <p className="text-muted-foreground mt-1">Manage global facilities, assets, and security.</p>
         </div>
 
         <Tabs defaultValue="facilities" className="w-full">
           <TabsList className="grid grid-cols-4 max-w-2xl">
             <TabsTrigger value="facilities">Approvals</TabsTrigger>
-            <TabsTrigger value="manage_facilities">Manage Facilities</TabsTrigger>
+            <TabsTrigger value="manage_facilities">Facilities & Assets</TabsTrigger>
             <TabsTrigger value="security">Security</TabsTrigger>
             <TabsTrigger value="analytics">Analytics</TabsTrigger>
           </TabsList>
@@ -142,15 +227,103 @@ const AdminPanel = () => {
 
           <TabsContent value="manage_facilities" className="mt-6">
              <div className="rounded-xl border bg-card shadow-card p-6">
-               <h3 className="text-lg font-bold mb-4">Manage Campus Facilities</h3>
-               <form onSubmit={handleAddFacility} className="flex gap-4 mb-6 max-w-md">
-                 <Input placeholder="New Facility Name" value={newFacility} onChange={e => setNewFacility(e.target.value)} />
-                 <Button type="submit">Add Facility</Button>
+               <h3 className="text-lg font-bold mb-4">Manage Campus Facilities & Assets</h3>
+               <form onSubmit={handleAddFacility} className="flex flex-col gap-4 mb-8 p-4 border rounded-lg bg-muted/10">
+                 <div className="flex gap-4">
+                   <Input placeholder="New Facility Name" value={newFacility} onChange={e => setNewFacility(e.target.value)} className="max-w-md" />
+                   <Button type="submit">Add Facility</Button>
+                 </div>
+                 <div className="flex flex-col gap-2">
+                   <span className="text-sm font-medium">Allowed Roles:</span>
+                   <div className="flex gap-4">
+                     {['student', 'faculty', 'principal', 'guest'].map((r: any) => (
+                       <label key={r} className="flex items-center gap-2 text-sm capitalize">
+                         <input type="checkbox" checked={selectedRoles.includes(r)} onChange={() => toggleRole(r)} />
+                         {r}
+                       </label>
+                     ))}
+                   </div>
+                 </div>
                </form>
-               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                 {facilities.map(f => (
-                   <div key={f} className="p-3 border rounded-lg bg-muted/20 font-medium text-center">{f}</div>
-                 ))}
+               
+               <div className="space-y-4">
+                 {facilities.map((f, i) => {
+                   const facName = typeof f === 'string' ? f : (f.name || 'Unknown');
+                   const facId = typeof f === 'string' ? f : (f._id || i);
+                   const allowedRoles = (typeof f !== 'string' && Array.isArray(f.allowedRoles)) ? f.allowedRoles : [];
+                   const assets = (typeof f !== 'string' && Array.isArray(f.assets)) ? f.assets : [];
+                   
+                   return (
+                   <div key={facId} className="p-4 border rounded-lg bg-card flex flex-col md:flex-row justify-between md:items-center gap-4">
+                     <div>
+                       <div className="font-semibold text-lg">{facName}</div>
+                       <div className="text-xs text-muted-foreground flex gap-1 mt-1">
+                         Roles: {allowedRoles.map(r => <span key={r} className="bg-primary/10 px-2 py-0.5 rounded capitalize">{r}</span>)}
+                       </div>
+                       <div className="text-xs text-muted-foreground mt-1">
+                         {assets.length} Assets
+                       </div>
+                     </div>
+                     <div className="flex gap-2 items-center flex-wrap">
+                       <Dialog>
+                         <DialogTrigger asChild>
+                           <Button variant="outline" size="sm" onClick={() => setSelectedFacilityForAssets(typeof f === 'string' ? null : f)}>Manage Assets</Button>
+                         </DialogTrigger>
+                         <DialogContent className="max-w-3xl">
+                           <DialogHeader>
+                             <DialogTitle>{facName} - Asset Management</DialogTitle>
+                           </DialogHeader>
+                           <div className="mt-4">
+                             <form onSubmit={handleAddAsset} className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6 p-4 border rounded-lg">
+                               <Input placeholder="Asset Tag" required value={newAsset.assetTag} onChange={e => setNewAsset({...newAsset, assetTag: e.target.value})} />
+                               <Input placeholder="Type (e.g. PC, Desk)" required value={newAsset.type} onChange={e => setNewAsset({...newAsset, type: e.target.value})} />
+                               <Input placeholder="Serial No" value={newAsset.serialNo} onChange={e => setNewAsset({...newAsset, serialNo: e.target.value})} />
+                               <Input placeholder="Vendor Name" value={newAsset.vendorName} onChange={e => setNewAsset({...newAsset, vendorName: e.target.value})} />
+                               <Input type="date" placeholder="Purchase Date" value={newAsset.purchaseDate} onChange={e => setNewAsset({...newAsset, purchaseDate: e.target.value})} />
+                               <Input type="number" placeholder="Price" value={newAsset.price} onChange={e => setNewAsset({...newAsset, price: e.target.value})} />
+                               <Input placeholder="Warranty" value={newAsset.warranty} onChange={e => setNewAsset({...newAsset, warranty: e.target.value})} />
+                               <Button type="submit" className="col-span-1"><Plus className="h-4 w-4 mr-2"/> Add Asset</Button>
+                             </form>
+
+                             <div className="flex justify-end gap-2 mb-4">
+                               <Button variant="outline" size="sm" onClick={() => typeof f !== 'string' && exportAssetsExcel(f)}><Download className="h-4 w-4 mr-2"/> Excel</Button>
+                               <Button variant="outline" size="sm" onClick={() => typeof f !== 'string' && exportAssetsPDF(f)}><Download className="h-4 w-4 mr-2"/> PDF</Button>
+                             </div>
+
+                             <div className="max-h-[300px] overflow-y-auto">
+                               <table className="w-full text-sm text-left">
+                                 <thead className="bg-muted sticky top-0">
+                                   <tr>
+                                     <th className="p-2">Tag</th>
+                                     <th className="p-2">Type</th>
+                                     <th className="p-2">Vendor</th>
+                                     <th className="p-2">Date</th>
+                                   </tr>
+                                 </thead>
+                                 <tbody>
+                                   {assets.map((a: any, idx) => (
+                                     <tr key={idx} className="border-t">
+                                       <td className="p-2">{a.assetTag}</td>
+                                       <td className="p-2">{a.type}</td>
+                                       <td className="p-2">{a.vendorName}</td>
+                                       <td className="p-2">{a.purchaseDate ? new Date(a.purchaseDate).toLocaleDateString() : ''}</td>
+                                     </tr>
+                                   ))}
+                                   {assets.length === 0 && (
+                                     <tr><td colSpan={4} className="p-4 text-center text-muted-foreground">No assets added.</td></tr>
+                                   )}
+                                 </tbody>
+                               </table>
+                             </div>
+                           </div>
+                         </DialogContent>
+                       </Dialog>
+                       <Button variant="destructive" size="icon" onClick={() => handleDeleteFacility(facId)}>
+                         <Trash2 className="h-4 w-4" />
+                       </Button>
+                     </div>
+                   </div>
+                 )})}
                </div>
              </div>
           </TabsContent>

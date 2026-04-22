@@ -16,6 +16,7 @@ import AdminPanel from "./pages/AdminPanel.tsx";
 import AdminUsage from "./pages/AdminUsage.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import PrincipalPanel from "./pages/PrincipalPanel.tsx";
+import Submissions from "./pages/Submissions.tsx";
 
 const queryClient = new QueryClient();
 
@@ -34,7 +35,7 @@ const App = () => (
               <Route
                 path="/dashboard"
                 element={
-                  <ProtectedRoute roles={["student", "faculty"]}>
+                  <ProtectedRoute roles={["student", "faculty", "guest"]}>
                     <Dashboard />
                   </ProtectedRoute>
                 }
@@ -42,7 +43,7 @@ const App = () => (
               <Route
                 path="/book"
                 element={
-                  <ProtectedRoute roles={["student", "faculty"]}>
+                  <ProtectedRoute roles={["student", "faculty", "guest"]}>
                     <BookFacility />
                   </ProtectedRoute>
                 }
@@ -50,8 +51,16 @@ const App = () => (
               <Route
                 path="/my-bookings"
                 element={
-                  <ProtectedRoute roles={["student", "faculty"]}>
+                  <ProtectedRoute roles={["student", "faculty", "guest"]}>
                     <MyBookings />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/submissions"
+                element={
+                  <ProtectedRoute roles={["student", "faculty"]}>
+                    <Submissions />
                   </ProtectedRoute>
                 }
               />
