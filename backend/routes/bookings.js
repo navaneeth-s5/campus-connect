@@ -21,7 +21,7 @@ router.get('/', auth, async (req, res) => {
 
 router.post('/', auth, async (req, res) => {
   try {
-    const { facility, date, startTime, endTime, purpose, reason } = req.body;
+    const { facility, date, startTime, endTime, purpose, reason, guestPhone, guestName } = req.body;
     
     // Global conflict check
     const conflict = await Booking.findOne({
@@ -41,9 +41,10 @@ router.post('/', auth, async (req, res) => {
 
     const booking = new Booking({
       userId: req.user.id,
-      userName: req.user.name,
+      userName: guestName || req.user.name,
       userRole: req.user.role,
       userCollege: req.user.college,
+      guestPhone,
       facility,
       date,
       startTime,

@@ -18,13 +18,15 @@ import 'jspdf-autotable';
 
 const AdminPanel = () => {
   const { bookings, setStatus, loadingBookings } = useBookings();
-  const pendingBookings = bookings.filter((b) => b.status === "pending" && b.facility !== "Principal Appointment");
+  const pendingBookings = bookings.filter((b) => b.status === "pending" || b.facility === "Principal Appointment");
 
   const [resetRequests, setResetRequests] = useState<any[]>([]);
   const [selectedCollege, setSelectedCollege] = useState<College | "All">("All");
   const [facilities, setFacilities] = useState<IFacility[]>([]);
   const [newFacility, setNewFacility] = useState("");
   const [selectedRoles, setSelectedRoles] = useState<Role[]>(['student', 'faculty', 'principal', 'guest']);
+  const [hasAssetManagement, setHasAssetManagement] = useState(true);
+  const [facultiesList, setFacultiesList] = useState<any[]>([]);
   
   const [selectedFacilityForAssets, setSelectedFacilityForAssets] = useState<IFacility | null>(null);
   const [newAsset, setNewAsset] = useState({
@@ -51,9 +53,17 @@ const AdminPanel = () => {
      } catch(e) {}
   };
 
+  const fetchFacultyList = async () => {
+     try {
+       const res = await axios.get('/api/auth/faculty');
+       setFacultiesList(res.data);
+     } catch(e) {}
+  };
+
   useEffect(() => {
      fetchResets();
      fetchFacilities();
+     fetchFacultyList();
      const socket = io();
      socket.on('booking_update', () => fetchResets()); // arbitrary re-trigger could be useful
      return () => { socket.disconnect(); };
@@ -63,9 +73,10 @@ const AdminPanel = () => {
      e.preventDefault();
      if (!newFacility.trim()) return;
      try {
-        await axios.post('/api/facilities', { name: newFacility, allowedRoles: selectedRoles });
+        await axios.post('/api/facilities', { name: newFacility, allowedRoles: selectedRoles, hasAssetManagement });
         toast.success("Facility added!");
         setNewFacility("");
+        setHasAssetManagement(true);
         fetchFacilities();
      } catch(err: any) {
         toast.error(err.response?.data?.error || "Failed to add facility");
@@ -79,6 +90,19 @@ const AdminPanel = () => {
       toast.success("Facility deleted");
       fetchFacilities();
     } catch(e) { toast.error("Failed to delete facility"); }
+  };
+
+  const handleAssignManager = async (facilityId: string, managerId: string) => {
+    try {
+      const fac = facilities.find(f => typeof f !== 'string' && f._id === facilityId);
+      if(!fac || typeof fac === 'string') return;
+      const currentManagers = fac.managers?.map(m => typeof m === 'string' ? m : m._id) || [];
+      if (currentManagers.includes(managerId)) return toast.error("Already a manager");
+      
+      await axios.put(`/api/facilities/${facilityId}/managers`, { managers: [...currentManagers, managerId] });
+      toast.success("Manager assigned");
+      fetchFacilities();
+    } catch(e) { toast.error("Failed to assign manager"); }
   };
 
   const handleApproveReset = async (userId: string) => {
@@ -111,6 +135,42 @@ const AdminPanel = () => {
     }
   };
 
+  const handleBulkUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || !e.target.files[0] || !selectedFacilityForAssets) return;
+    const file = e.target.files[0];
+    const reader = new FileReader();
+    reader.onload = async (evt) => {
+      try {
+        const bstr = evt.target?.result;
+        const wb = XLSX.read(bstr, { type: 'binary' });
+        const wsname = wb.SheetNames[0];
+        const ws = wb.Sheets[wsname];
+        const data = XLSX.utils.sheet_to_json(ws);
+        
+        const mappedAssets = data.map((row: any) => ({
+          assetTag: row['Asset Tag'] || row['assetTag'] || '',
+          serialNo: row['Serial No'] || row['serialNo'] || '',
+          type: row['Type'] || row['type'] || '',
+          vendorName: row['Vendor'] || row['vendorName'] || '',
+          price: row['Price'] || row['price'] || 0,
+          warranty: row['Warranty'] || row['warranty'] || ''
+        })).filter(a => a.assetTag || a.type);
+
+        await axios.post(`/api/facilities/${selectedFacilityForAssets._id}/assets/bulk`, { assets: mappedAssets });
+        toast.success(`${mappedAssets.length} assets uploaded!`);
+        fetchFacilities();
+        
+        const res = await axios.get('/api/facilities');
+        const fac = res.data.find((f: IFacility) => f._id === selectedFacilityForAssets._id);
+        setSelectedFacilityForAssets(fac);
+      } catch(e) {
+        toast.error("Failed to parse or upload Excel file");
+      }
+    };
+    reader.readAsBinaryString(file);
+    e.target.value = '';
+  };
+
   const exportAssetsExcel = (facility: IFacility) => {
     const ws = XLSX.utils.json_to_sheet(facility.assets.map(a => ({
       "Asset Tag": a.assetTag,
@@ -124,23 +184,6 @@ const AdminPanel = () => {
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Assets");
     XLSX.writeFile(wb, `${facility.name}_Assets.xlsx`);
-  };
-
-  const exportAssetsPDF = (facility: IFacility) => {
-    const doc = new jsPDF();
-    doc.text(`${facility.name} - Asset Details`, 14, 15);
-    const tableColumn = ["Tag", "Serial No", "Type", "Vendor", "Purchase Date", "Price", "Warranty"];
-    const tableRows = facility.assets.map(a => [
-      a.assetTag, a.serialNo, a.type, a.vendorName, 
-      a.purchaseDate ? new Date(a.purchaseDate).toLocaleDateString() : '', 
-      a.price, a.warranty
-    ]);
-    (doc as any).autoTable({
-      head: [tableColumn],
-      body: tableRows,
-      startY: 20
-    });
-    doc.save(`${facility.name}_Assets.pdf`);
   };
 
   const analytics = useMemo(() => {
@@ -169,7 +212,7 @@ const AdminPanel = () => {
 
         <Tabs defaultValue="facilities" className="w-full">
           <TabsList className="grid grid-cols-4 max-w-2xl">
-            <TabsTrigger value="facilities">Approvals</TabsTrigger>
+            <TabsTrigger value="facilities">Appointments & Approvals</TabsTrigger>
             <TabsTrigger value="manage_facilities">Facilities & Assets</TabsTrigger>
             <TabsTrigger value="security">Security</TabsTrigger>
             <TabsTrigger value="analytics">Analytics</TabsTrigger>
@@ -190,6 +233,7 @@ const AdminPanel = () => {
                       <th className="p-3">Facility</th>
                       <th className="p-3">Date & Time</th>
                       <th className="p-3">Purpose</th>
+                      <th className="p-3">Status</th>
                       <th className="p-3 text-right">Actions</th>
                     </tr>
                   </thead>
@@ -198,7 +242,7 @@ const AdminPanel = () => {
                       <tr key={b.id}>
                         <td className="p-3">
                            <div className="font-medium">{b.userName}</div>
-                           <div className="text-xs text-muted-foreground">{b.userRole}</div>
+                           <div className="text-xs text-muted-foreground">{b.userRole}{b.guestPhone ? ` • 📞 ${b.guestPhone}` : ''}</div>
                         </td>
                         <td className="p-3 font-medium text-xs">{b.userCollege}</td>
                         <td className="p-3 font-medium">{b.facility}</td>
@@ -207,6 +251,7 @@ const AdminPanel = () => {
                            <div className="text-xs text-muted-foreground">{b.startTime} - {b.endTime}</div>
                         </td>
                         <td className="p-3 italic">"{b.purpose}"</td>
+                        <td className="p-3"><StatusBadge status={b.status} /></td>
                         <td className="p-3">
                            <div className="flex justify-end gap-2">
                              <Button size="icon" variant="outline" className="text-success hover:text-success hover:bg-success/10" onClick={() => setStatus(b.id, "approved")}>
@@ -243,6 +288,12 @@ const AdminPanel = () => {
                        </label>
                      ))}
                    </div>
+                   <div className="mt-2">
+                     <label className="flex items-center gap-2 text-sm font-medium">
+                       <input type="checkbox" checked={hasAssetManagement} onChange={e => setHasAssetManagement(e.target.checked)} />
+                       Enable Asset Management for this facility
+                     </label>
+                   </div>
                  </div>
                </form>
                
@@ -260,15 +311,31 @@ const AdminPanel = () => {
                        <div className="text-xs text-muted-foreground flex gap-1 mt-1">
                          Roles: {allowedRoles.map(r => <span key={r} className="bg-primary/10 px-2 py-0.5 rounded capitalize">{r}</span>)}
                        </div>
-                       <div className="text-xs text-muted-foreground mt-1">
-                         {assets.length} Assets
-                       </div>
+                       {f.hasAssetManagement !== false && (
+                         <div className="text-xs text-muted-foreground mt-1">
+                           {assets.length} Assets
+                         </div>
+                       )}
+                       {f.hasAssetManagement !== false && (
+                         <div className="text-xs text-muted-foreground mt-1 flex items-center gap-2">
+                           Managers: {(typeof f !== 'string' && f.managers && f.managers.length > 0) ? f.managers.map(m => typeof m === 'string' ? m : m.name).join(', ') : 'None'}
+                           <Select onValueChange={(val) => handleAssignManager(String(facId), val)}>
+                             <SelectTrigger className="h-6 w-32 text-[10px] ml-2"><SelectValue placeholder="+ Assign" /></SelectTrigger>
+                             <SelectContent>
+                               {facultiesList.map(faculty => (
+                                 <SelectItem key={faculty._id} value={faculty._id}>{faculty.name}</SelectItem>
+                               ))}
+                             </SelectContent>
+                           </Select>
+                         </div>
+                       )}
                      </div>
                      <div className="flex gap-2 items-center flex-wrap">
-                       <Dialog>
-                         <DialogTrigger asChild>
-                           <Button variant="outline" size="sm" onClick={() => setSelectedFacilityForAssets(typeof f === 'string' ? null : f)}>Manage Assets</Button>
-                         </DialogTrigger>
+                       {f.hasAssetManagement !== false && (
+                         <Dialog>
+                           <DialogTrigger asChild>
+                             <Button variant="outline" size="sm" onClick={() => setSelectedFacilityForAssets(typeof f === 'string' ? null : f)}>Manage Assets</Button>
+                           </DialogTrigger>
                          <DialogContent className="max-w-3xl">
                            <DialogHeader>
                              <DialogTitle>{facName} - Asset Management</DialogTitle>
@@ -285,9 +352,12 @@ const AdminPanel = () => {
                                <Button type="submit" className="col-span-1"><Plus className="h-4 w-4 mr-2"/> Add Asset</Button>
                              </form>
 
-                             <div className="flex justify-end gap-2 mb-4">
+                             <div className="flex justify-between items-center mb-4">
+                               <div className="flex items-center gap-2">
+                                 <Input type="file" accept=".xlsx, .xls" className="max-w-[200px]" onChange={handleBulkUpload} />
+                                 <span className="text-xs text-muted-foreground">Bulk Upload (Excel)</span>
+                               </div>
                                <Button variant="outline" size="sm" onClick={() => typeof f !== 'string' && exportAssetsExcel(f)}><Download className="h-4 w-4 mr-2"/> Excel</Button>
-                               <Button variant="outline" size="sm" onClick={() => typeof f !== 'string' && exportAssetsPDF(f)}><Download className="h-4 w-4 mr-2"/> PDF</Button>
                              </div>
 
                              <div className="max-h-[300px] overflow-y-auto">
@@ -318,7 +388,8 @@ const AdminPanel = () => {
                            </div>
                          </DialogContent>
                        </Dialog>
-                       <Button variant="destructive" size="icon" onClick={() => handleDeleteFacility(facId)}>
+                       )}
+                       <Button variant="destructive" size="icon" onClick={() => handleDeleteFacility(String(facId))}>
                          <Trash2 className="h-4 w-4" />
                        </Button>
                      </div>

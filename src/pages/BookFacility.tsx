@@ -32,6 +32,8 @@ const BookFacility = () => {
   const [endTime, setEndTime] = useState("10:00");
   const [purpose, setPurpose] = useState("");
   const [reason, setReason] = useState("");
+  const [guestName, setGuestName] = useState("");
+  const [guestPhone, setGuestPhone] = useState("");
   const [facilities, setFacilities] = useState<any[]>([]);
 
   useEffect(() => {
@@ -59,6 +61,12 @@ const BookFacility = () => {
     if (!purpose.trim()) return toast.error("Please describe the purpose");
     if (isPrincipal && !reason.trim()) return toast.error("Reason for visit is required");
 
+    if (user.role === 'guest') {
+      if (!guestName.trim() || !guestPhone.trim()) {
+        return toast.error("Please enter your Name and Phone Number");
+      }
+    }
+
     const result = await createBooking({
       userId: user.id,
       userName: user.name,
@@ -70,6 +78,8 @@ const BookFacility = () => {
       endTime,
       purpose: purpose.trim(),
       reason: isPrincipal ? reason.trim() : undefined,
+      guestName: user.role === 'guest' ? guestName.trim() : undefined,
+      guestPhone: user.role === 'guest' ? guestPhone.trim() : undefined,
     });
     if (!result.ok) {
       toast.error(result.error || "Could not create booking");
@@ -105,6 +115,19 @@ const BookFacility = () => {
                 </SelectContent>
               </Select>
             </div>
+
+            {user.role === 'guest' && (
+              <div className="grid sm:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <Label htmlFor="guestName">Your Full Name</Label>
+                  <Input id="guestName" value={guestName} onChange={(e) => setGuestName(e.target.value)} required />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="guestPhone">Phone Number</Label>
+                  <Input id="guestPhone" type="tel" value={guestPhone} onChange={(e) => setGuestPhone(e.target.value)} required />
+                </div>
+              </div>
+            )}
 
             <div className="grid sm:grid-cols-3 gap-4">
               <div className="space-y-1.5">
@@ -171,7 +194,7 @@ const BookFacility = () => {
                   <li key={b.id} className="flex items-center justify-between rounded-md border bg-background p-3">
                     <div>
                       <div className="font-medium text-sm">{b.startTime} – {b.endTime}</div>
-                      <div className="text-xs text-muted-foreground">{b.userName} • {b.userRole}</div>
+                      <div className="text-xs text-muted-foreground">{b.userName} • {b.userRole}{b.guestPhone ? ` • 📞 ${b.guestPhone}` : ''}</div>
                     </div>
                     <StatusBadge status={b.status} />
                   </li>

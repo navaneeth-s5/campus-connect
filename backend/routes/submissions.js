@@ -32,7 +32,7 @@ router.post('/', auth, upload.single('file'), async (req, res) => {
 
   try {
     const submission = await Submission.create({
-      student: req.user.userId,
+      student: req.user.id,
       faculty: facultyId,
       title,
       description,
@@ -49,9 +49,9 @@ router.get('/', auth, async (req, res) => {
   try {
     let query = {};
     if (req.user.role === 'student') {
-      query.student = req.user.userId;
+      query.student = req.user.id;
     } else if (req.user.role === 'faculty') {
-      query.faculty = req.user.userId;
+      query.faculty = req.user.id;
     } else {
       return res.status(403).json({ error: 'Unauthorized' });
     }

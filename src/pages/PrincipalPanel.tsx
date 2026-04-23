@@ -82,7 +82,7 @@ const PrincipalPanel = () => {
                       <tr key={b.id} className="align-top relative">
                          <td className="p-3">
                            <div className="font-medium">{b.userName}</div>
-                           <div className="text-xs text-muted-foreground">{b.userRole}</div>
+                           <div className="text-xs text-muted-foreground">{b.userRole}{b.guestPhone ? ` • 📞 ${b.guestPhone}` : ''}</div>
                          </td>
                          <td className="p-3 font-medium text-xs">{b.userCollege}</td>
                          <td className="p-3 font-medium">{b.date}</td>

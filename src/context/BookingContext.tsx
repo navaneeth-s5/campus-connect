@@ -8,7 +8,7 @@ import { useAuth } from "./AuthContext";
 interface BookingContextValue {
   bookings: Booking[];
   loadingBookings: boolean;
-  createBooking: (b: Omit<Booking, "id" | "status" | "createdAt" | "approvedRoom" | "approvedTime" | "declineReason">) => Promise<{ ok: boolean; error?: string }>;
+  createBooking: (b: Omit<Booking, "id" | "status" | "createdAt" | "approvedRoom" | "approvedTime" | "declineReason"> & { guestName?: string }) => Promise<{ ok: boolean; error?: string }>;
   setStatus: (id: string, status: BookingStatus, extra?: { approvedRoom?: string; approvedTime?: string; declineReason?: string; }) => Promise<void>;
   deleteBooking: (id: string) => Promise<void>;
   refreshBookings: () => Promise<void>;

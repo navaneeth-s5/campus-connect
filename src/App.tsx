@@ -17,6 +17,9 @@ import AdminUsage from "./pages/AdminUsage.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import PrincipalPanel from "./pages/PrincipalPanel.tsx";
 import Submissions from "./pages/Submissions.tsx";
+import ITSupport from "./pages/ITSupport.tsx";
+import FacultyAssets from "./pages/FacultyAssets.tsx";
+import CampusCalendar from "./pages/CampusCalendar.tsx";
 
 const queryClient = new QueryClient();
 
@@ -65,6 +68,22 @@ const App = () => (
                 }
               />
               <Route
+                path="/faculty-assets"
+                element={
+                  <ProtectedRoute roles={["faculty"]}>
+                    <FacultyAssets />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/support"
+                element={
+                  <ProtectedRoute roles={["student", "faculty", "admin", "principal"]}>
+                    <ITSupport />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
                 path="/admin"
                 element={
                   <ProtectedRoute roles={["admin"]}>
@@ -85,6 +104,14 @@ const App = () => (
                 element={
                   <ProtectedRoute roles={["principal"]}>
                     <PrincipalPanel />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/calendar"
+                element={
+                  <ProtectedRoute roles={["student", "faculty", "admin", "principal", "guest"]}>
+                    <CampusCalendar />
                   </ProtectedRoute>
                 }
               />

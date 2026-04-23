@@ -7,6 +7,7 @@ const authRoutes = require('./routes/auth');
 const bookingRoutes = require('./routes/bookings');
 const facilityRoutes = require('./routes/facilities');
 const submissionsRoutes = require('./routes/submissions');
+const ticketRoutes = require('./routes/tickets');
 
 const app = express();
 
@@ -19,6 +20,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/bookings', bookingRoutes);
 app.use('/api/facilities', facilityRoutes);
 app.use('/api/submissions', submissionsRoutes);
+app.use('/api/tickets', ticketRoutes);
 
 const { MongoMemoryServer } = require('mongodb-memory-server');
 const fs = require('fs');

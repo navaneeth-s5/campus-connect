@@ -24,7 +24,7 @@ mongoose.connection.once('open', seedFacilities);
 
 router.get('/', async (req, res) => {
   try {
-    const facilities = await Facility.find();
+    const facilities = await Facility.find().populate('managers', 'name rollNumber department');
     res.json(facilities);
   } catch(e) {
     res.status(500).json({ error: 'Server error' });
@@ -33,10 +33,14 @@ router.get('/', async (req, res) => {
 
 router.post('/', auth, async (req, res) => {
   if (req.user.role !== 'admin') return res.status(403).json({ error: 'Unauthorized' });
-  const { name, allowedRoles } = req.body;
+  const { name, allowedRoles, hasAssetManagement } = req.body;
   if (!name) return res.status(400).json({ error: 'Name required' });
   try {
-    await Facility.create({ name, allowedRoles: allowedRoles || ['student', 'faculty', 'principal', 'guest'] });
+    await Facility.create({ 
+      name, 
+      allowedRoles: allowedRoles || ['student', 'faculty', 'principal', 'guest'],
+      hasAssetManagement: hasAssetManagement !== undefined ? hasAssetManagement : true
+    });
     res.json({ success: true });
   } catch(e) {
     res.status(400).json({ error: 'Facility might already exist' });
@@ -53,11 +57,28 @@ router.delete('/:id', auth, async (req, res) => {
   }
 });
 
-router.post('/:id/assets', auth, async (req, res) => {
+// Helper for asset auth
+const isManagerOrAdmin = (user, facility) => {
+  if (user.role === 'admin') return true;
+  if (facility.managers && facility.managers.some(m => m._id.toString() === user.id || m.toString() === user.id)) return true;
+  return false;
+};
+
+router.put('/:id/managers', auth, async (req, res) => {
   if (req.user.role !== 'admin') return res.status(403).json({ error: 'Unauthorized' });
+  try {
+    const facility = await Facility.findByIdAndUpdate(req.params.id, { managers: req.body.managers }, { new: true }).populate('managers', 'name rollNumber department');
+    res.json(facility);
+  } catch(e) {
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+router.post('/:id/assets', auth, async (req, res) => {
   try {
     const facility = await Facility.findById(req.params.id);
     if (!facility) return res.status(404).json({ error: 'Facility not found' });
+    if (!isManagerOrAdmin(req.user, facility)) return res.status(403).json({ error: 'Unauthorized' });
     
     facility.assets.push(req.body);
     await facility.save();
@@ -68,13 +89,29 @@ router.post('/:id/assets', auth, async (req, res) => {
 });
 
 router.delete('/:id/assets/:assetId', auth, async (req, res) => {
-  if (req.user.role !== 'admin') return res.status(403).json({ error: 'Unauthorized' });
   try {
     const facility = await Facility.findById(req.params.id);
     if (!facility) return res.status(404).json({ error: 'Facility not found' });
+    if (!isManagerOrAdmin(req.user, facility)) return res.status(403).json({ error: 'Unauthorized' });
     
     facility.assets.pull({ _id: req.params.assetId });
     await facility.save();
+    res.json(facility);
+  } catch(e) {
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+router.post('/:id/assets/bulk', auth, async (req, res) => {
+  try {
+    const facility = await Facility.findById(req.params.id);
+    if (!facility) return res.status(404).json({ error: 'Facility not found' });
+    if (!isManagerOrAdmin(req.user, facility)) return res.status(403).json({ error: 'Unauthorized' });
+    
+    if (Array.isArray(req.body.assets)) {
+      facility.assets.push(...req.body.assets);
+      await facility.save();
+    }
     res.json(facility);
   } catch(e) {
     res.status(500).json({ error: 'Server error' });
