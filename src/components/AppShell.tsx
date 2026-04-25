@@ -12,7 +12,8 @@ import {
   Briefcase,
   FileText,
   LifeBuoy,
-  CalendarDays
+  CalendarDays,
+  BookOpen
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { cn } from "@/lib/utils";
@@ -23,6 +24,7 @@ import { toast } from "sonner";
 const navByRole = {
   student: [
     { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+    { to: "/lms", label: "Campus LMS", icon: BookOpen },
     { to: "/book", label: "Book Facility", icon: CalendarPlus },
     { to: "/calendar", label: "Campus Calendar", icon: CalendarDays },
     { to: "/my-bookings", label: "My Bookings", icon: ListChecks },
@@ -31,6 +33,7 @@ const navByRole = {
   ],
   faculty: [
     { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+    { to: "/lms", label: "Campus LMS", icon: BookOpen },
     { to: "/book", label: "Book Facility", icon: CalendarPlus },
     { to: "/calendar", label: "Campus Calendar", icon: CalendarDays },
     { to: "/my-bookings", label: "My Bookings", icon: ListChecks },
@@ -40,6 +43,7 @@ const navByRole = {
   ],
   admin: [
     { to: "/admin", label: "Admin Panel", icon: ShieldCheck },
+    { to: "/lms", label: "Campus LMS", icon: BookOpen },
     { to: "/calendar", label: "Campus Calendar", icon: CalendarDays },
     { to: "/admin/usage", label: "Usage Stats", icon: BarChart3 },
     { to: "/support", label: "IT Helpdesk", icon: LifeBuoy },
@@ -50,10 +54,8 @@ const navByRole = {
     { to: "/support", label: "IT Helpdesk", icon: LifeBuoy },
   ],
   guest: [
-    { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-    { to: "/book", label: "Book Facility", icon: CalendarPlus },
-    { to: "/calendar", label: "Campus Calendar", icon: CalendarDays },
-    { to: "/my-bookings", label: "My Bookings", icon: ListChecks },
+    { to: "/dashboard", label: "Visitor Home", icon: LayoutDashboard },
+    { to: "/book", label: "Register Enquiry", icon: CalendarPlus },
   ]
 } as const;
 

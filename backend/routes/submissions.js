@@ -67,4 +67,38 @@ router.get('/', auth, async (req, res) => {
   }
 });
 
+// Delete a submission
+router.delete('/:id', auth, async (req, res) => {
+  try {
+    const submission = await Submission.findById(req.params.id);
+    if (!submission) return res.status(404).json({ error: 'Submission not found' });
+
+    // Only the student who submitted or an admin can delete it
+    const isOwner = submission.student.toString() === req.user.id.toString();
+    const isAdmin = req.user.role === 'admin';
+
+    if (!isOwner && !isAdmin) {
+      return res.status(403).json({ error: 'Unauthorized to delete this submission' });
+    }
+
+    // Delete the file from the filesystem if it exists
+    const relativePath = submission.fileUrl.startsWith('/') ? submission.fileUrl.substring(1) : submission.fileUrl;
+    const filePath = path.join(__dirname, '..', relativePath);
+    
+    if (fs.existsSync(filePath)) {
+      try {
+        fs.unlinkSync(filePath);
+      } catch (fErr) {
+        console.error('File unlink error:', fErr);
+      }
+    }
+
+    await Submission.findByIdAndDelete(req.params.id);
+    res.json({ message: 'Deleted successfully' });
+  } catch (err) {
+    console.error('Delete error:', err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 module.exports = router;

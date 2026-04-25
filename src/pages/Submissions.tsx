@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import axios from "axios";
 import { toast } from "sonner";
-import { FileText, Download } from "lucide-react";
+import { FileText, Download, Trash2 } from "lucide-react";
 
 export default function Submissions() {
   const { user } = useAuth();
@@ -72,6 +72,31 @@ export default function Submissions() {
     }
   };
 
+  const handleDelete = async (id: string) => {
+    if (!id) return toast.error("Submission ID is missing");
+    if (!window.confirm("Are you sure you want to delete this submission?")) return;
+
+    const promise = async () => {
+      // Optimistic update: remove from UI immediately
+      setSubmissions(prev => prev.filter(s => (s._id || s.id) !== id));
+      
+      try {
+        const res = await axios.delete(`/api/submissions/${id}`);
+        return res.data;
+      } catch (err: any) {
+        // If it fails, we need to refetch to restore the item
+        fetchSubmissions();
+        throw err;
+      }
+    };
+
+    toast.promise(promise(), {
+      loading: 'Deleting submission...',
+      success: 'Submission deleted successfully',
+      error: (err) => err.response?.data?.error || "Failed to delete submission"
+    });
+  };
+
   return (
     <AppShell>
       <div className="space-y-6">
@@ -130,33 +155,44 @@ export default function Submissions() {
             </div>
           ) : (
             <div className="divide-y border rounded-lg">
-              {submissions.map((sub: any) => (
-                <div key={sub._id} className="p-4 flex flex-col md:flex-row justify-between md:items-center gap-4">
-                  <div>
-                    <h3 className="font-semibold text-lg flex items-center gap-2">
-                      <FileText className="h-4 w-4 text-primary" /> {sub.title}
-                    </h3>
-                    <div className="text-sm text-muted-foreground mt-1">
-                      {user?.role === 'faculty' ? (
-                        <>From: <span className="font-medium text-foreground">{sub.student?.name}</span> ({sub.student?.rollNumber}) • {sub.student?.department}</>
-                      ) : (
-                        <>To: <span className="font-medium text-foreground">{sub.faculty?.name}</span></>
+              {submissions.map((sub: any) => {
+                const submissionId = sub._id || sub.id;
+                const studentId = sub.student?._id || sub.student;
+                const isOwner = user?.id === studentId;
+                
+                return (
+                  <div key={submissionId} className="p-4 flex flex-col md:flex-row justify-between md:items-center gap-4">
+                    <div>
+                      <h3 className="font-semibold text-lg flex items-center gap-2">
+                        <FileText className="h-4 w-4 text-primary" /> {sub.title}
+                      </h3>
+                      <div className="text-sm text-muted-foreground mt-1">
+                        {user?.role === 'faculty' ? (
+                          <>From: <span className="font-medium text-foreground">{sub.student?.name}</span> ({sub.student?.rollNumber}) • {sub.student?.department}</>
+                        ) : (
+                          <>To: <span className="font-medium text-foreground">{sub.faculty?.name}</span></>
+                        )}
+                      </div>
+                      {sub.description && <p className="text-sm mt-2 italic">"{sub.description}"</p>}
+                      <div className="text-xs text-muted-foreground mt-2">
+                        Submitted on: {new Date(sub.createdAt).toLocaleString()}
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button variant="outline" asChild size="sm">
+                        <a href={sub.fileUrl} target="_blank" rel="noopener noreferrer">
+                          <Download className="h-4 w-4 mr-2" /> Download
+                        </a>
+                      </Button>
+                      {(isOwner || user?.role === 'admin') && (
+                        <Button variant="destructive" size="sm" onClick={() => handleDelete(submissionId)}>
+                          <Trash2 className="h-4 w-4 mr-2" /> Delete
+                        </Button>
                       )}
                     </div>
-                    {sub.description && <p className="text-sm mt-2 italic">"{sub.description}"</p>}
-                    <div className="text-xs text-muted-foreground mt-2">
-                      Submitted on: {new Date(sub.createdAt).toLocaleString()}
-                    </div>
                   </div>
-                  <div>
-                    <Button variant="outline" asChild size="sm">
-                      <a href={sub.fileUrl} target="_blank" rel="noopener noreferrer">
-                        <Download className="h-4 w-4 mr-2" /> Download
-                      </a>
-                    </Button>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>

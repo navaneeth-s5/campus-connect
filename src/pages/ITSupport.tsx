@@ -89,8 +89,8 @@ export default function ITSupport() {
       <div className="space-y-6">
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-3xl font-bold">IT Helpdesk & Support</h1>
-            <p className="text-muted-foreground mt-1">Raise and track your support tickets.</p>
+            <h1 className="text-3xl font-bold">Help Desk & Complaints</h1>
+            <p className="text-muted-foreground mt-1">Register and track your complaints or support requests.</p>
           </div>
           <Dialog open={isCreating} onOpenChange={setIsCreating}>
             <DialogTrigger asChild>
@@ -155,7 +155,7 @@ export default function ITSupport() {
         <div className="grid md:grid-cols-3 gap-6">
           <div className="md:col-span-1 border rounded-xl bg-card shadow-card overflow-hidden flex flex-col h-[600px]">
             <div className="p-4 bg-muted/50 border-b font-semibold flex items-center gap-2">
-              <LifeBuoy className="h-4 w-4" /> My Tickets
+              <LifeBuoy className="h-4 w-4" /> {user?.role === 'admin' ? 'All Tickets' : 'My Tickets'}
             </div>
             <div className="overflow-y-auto flex-1">
               {tickets.length === 0 ? (

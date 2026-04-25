@@ -60,9 +60,9 @@ export default function CampusCalendar() {
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
             <h1 className="text-3xl font-bold flex items-center gap-2">
-              <CalendarIcon className="h-8 w-8 text-primary" /> Campus Calendar
+              <CalendarIcon className="h-8 w-8 text-primary" /> Academic Calendar
             </h1>
-            <p className="text-muted-foreground mt-1">View campus facility bookings and scheduled events.</p>
+            <p className="text-muted-foreground mt-1">View campus schedule, facility bookings, and important dates.</p>
           </div>
           
           <div className="flex items-center gap-4 bg-card border rounded-lg p-1 shadow-sm">

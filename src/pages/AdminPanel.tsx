@@ -17,8 +17,8 @@ import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 
 const AdminPanel = () => {
-  const { bookings, setStatus, loadingBookings } = useBookings();
-  const pendingBookings = bookings.filter((b) => b.status === "pending" || b.facility === "Principal Appointment");
+  const { bookings = [], setStatus, loadingBookings } = useBookings();
+  const pendingBookings = (bookings || []).filter((b) => b.status === "pending" || b.facility === "Principal Appointment");
 
   const [resetRequests, setResetRequests] = useState<any[]>([]);
   const [selectedCollege, setSelectedCollege] = useState<College | "All">("All");
@@ -27,6 +27,8 @@ const AdminPanel = () => {
   const [selectedRoles, setSelectedRoles] = useState<Role[]>(['student', 'faculty', 'principal', 'guest']);
   const [hasAssetManagement, setHasAssetManagement] = useState(true);
   const [facultiesList, setFacultiesList] = useState<any[]>([]);
+  const [allUsers, setAllUsers] = useState<any[]>([]);
+
   
   const [selectedFacilityForAssets, setSelectedFacilityForAssets] = useState<IFacility | null>(null);
   const [newAsset, setNewAsset] = useState({
@@ -60,10 +62,20 @@ const AdminPanel = () => {
      } catch(e) {}
   };
 
+  const fetchAllUsers = async () => {
+    try {
+      const res = await axios.get('/api/auth/users');
+      setAllUsers(res.data);
+    } catch(e) {}
+  };
+
+
   useEffect(() => {
      fetchResets();
      fetchFacilities();
      fetchFacultyList();
+     fetchAllUsers();
+
      const socket = io();
      socket.on('booking_update', () => fetchResets()); // arbitrary re-trigger could be useful
      return () => { socket.disconnect(); };
@@ -114,6 +126,25 @@ const AdminPanel = () => {
         fetchResets();
      } catch(e) { toast.error("Reset failed"); }
   };
+
+  const handleUpdateRole = async (userId: string, newRole: string) => {
+    try {
+      await axios.put('/api/auth/role', { userId, newRole });
+      toast.success("User role updated");
+      fetchAllUsers();
+    } catch(e) { toast.error("Failed to update role"); }
+  };
+
+  const handleDeleteUser = async (userId: string) => {
+    if (!confirm("Are you sure you want to delete this user? This action cannot be undone.")) return;
+    try {
+      await axios.delete(`/api/auth/users/${userId}`);
+      toast.success("User deleted successfully");
+      fetchAllUsers();
+    } catch(e) { toast.error("Failed to delete user"); }
+  };
+
+
 
   const handleAddAsset = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -187,12 +218,12 @@ const AdminPanel = () => {
   };
 
   const analytics = useMemo(() => {
-     const relevant = selectedCollege === "All" ? bookings : bookings.filter(b => b.userCollege === selectedCollege);
+     const relevant = selectedCollege === "All" ? (bookings || []) : (bookings || []).filter(b => b.userCollege === selectedCollege);
      const total = relevant.length;
      const approved = relevant.filter(b => b.status === "approved").length;
      const rejected = relevant.filter(b => b.status === "rejected").length;
      return { total, approved, rejected };
-  }, [bookings, selectedCollege]);
+  }, [(bookings || []), selectedCollege]);
 
   const toggleRole = (role: Role) => {
     if (selectedRoles.includes(role)) {
@@ -211,9 +242,10 @@ const AdminPanel = () => {
         </div>
 
         <Tabs defaultValue="facilities" className="w-full">
-          <TabsList className="grid grid-cols-4 max-w-2xl">
-            <TabsTrigger value="facilities">Appointments & Approvals</TabsTrigger>
-            <TabsTrigger value="manage_facilities">Facilities & Assets</TabsTrigger>
+          <TabsList className="grid grid-cols-5 max-w-3xl">
+            <TabsTrigger value="facilities">Appointments</TabsTrigger>
+            <TabsTrigger value="manage_facilities">Facilities</TabsTrigger>
+            <TabsTrigger value="users">Users</TabsTrigger>
             <TabsTrigger value="security">Security</TabsTrigger>
             <TabsTrigger value="analytics">Analytics</TabsTrigger>
           </TabsList>
@@ -398,6 +430,55 @@ const AdminPanel = () => {
                </div>
              </div>
           </TabsContent>
+
+           <TabsContent value="users" className="mt-6">
+             <div className="rounded-xl border bg-card shadow-card p-6">
+               <h3 className="text-lg font-bold mb-4 flex items-center gap-2"><Plus className="h-5 w-5" /> User Management</h3>
+               <div className="overflow-x-auto">
+                 <table className="w-full text-sm text-left">
+                   <thead className="bg-muted text-xs uppercase text-muted-foreground">
+                     <tr>
+                       <th className="p-3">User</th>
+                       <th className="p-3">Roll Number</th>
+                       <th className="p-3">Department</th>
+                       <th className="p-3">Role</th>
+                       <th className="p-3">Actions</th>
+                     </tr>
+                   </thead>
+                   <tbody className="divide-y">
+                     {Array.isArray(allUsers) && allUsers.map(u => (
+                       <tr key={u._id}>
+                         <td className="p-3">
+                           <div className="font-medium">{u.name}</div>
+                           <div className="text-xs text-muted-foreground">{u.college}</div>
+                         </td>
+                         <td className="p-3">{u.rollNumber}</td>
+                         <td className="p-3">{u.department}</td>
+                         <td className="p-3 uppercase font-bold text-xs">{u.role}</td>
+                         <td className="p-3">
+                           <div className="flex items-center gap-2">
+                             <Select value={u.role} onValueChange={(val) => handleUpdateRole(u._id, val)}>
+                               <SelectTrigger className="h-8 w-32"><SelectValue /></SelectTrigger>
+                               <SelectContent>
+                                 <SelectItem value="student">Student</SelectItem>
+                                 <SelectItem value="faculty">Faculty</SelectItem>
+                                 <SelectItem value="admin">Admin</SelectItem>
+                                 <SelectItem value="principal">Principal</SelectItem>
+                                 <SelectItem value="guest">Guest</SelectItem>
+                               </SelectContent>
+                             </Select>
+                             <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10" onClick={() => handleDeleteUser(u._id)}>
+                               <Trash2 className="h-4 w-4" />
+                             </Button>
+                           </div>
+                         </td>
+                       </tr>
+                     ))}
+                   </tbody>
+                 </table>
+               </div>
+             </div>
+           </TabsContent>
 
           <TabsContent value="security" className="mt-6">
              <div className="rounded-xl border bg-card shadow-card p-6">

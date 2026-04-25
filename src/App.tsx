@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Route, Routes, Navigate } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -20,6 +20,11 @@ import Submissions from "./pages/Submissions.tsx";
 import ITSupport from "./pages/ITSupport.tsx";
 import FacultyAssets from "./pages/FacultyAssets.tsx";
 import CampusCalendar from "./pages/CampusCalendar.tsx";
+import LMSPortal from "./pages/LMSPortal.tsx";
+import LMSCourseView from "./pages/LMSCourseView.tsx";
+import LMSAdmin from "./pages/LMSAdmin.tsx";
+import KioskBrowser from "./pages/KioskBrowser.tsx";
+
 
 const queryClient = new QueryClient();
 
@@ -115,7 +120,36 @@ const App = () => (
                   </ProtectedRoute>
                 }
               />
-              <Route path="*" element={<NotFound />} />
+              <Route
+                path="/lms"
+                element={
+                  <ProtectedRoute roles={["student", "faculty", "admin"]}>
+                    <LMSPortal />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/lms/course/:id"
+                element={
+                  <ProtectedRoute roles={["student", "faculty", "admin"]}>
+                    <LMSCourseView />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/lms/admin"
+                element={
+                  <ProtectedRoute roles={["admin"]}>
+                    <LMSAdmin />
+                  </ProtectedRoute>
+                }
+              />
+
+              <Route
+                path="/kiosk-view"
+                element={<KioskBrowser />}
+              />
+              <Route path="*" element={<Navigate to="/dashboard" replace />} />
             </Routes>
           </BookingProvider>
         </AuthProvider>

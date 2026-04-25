@@ -8,6 +8,8 @@ const bookingRoutes = require('./routes/bookings');
 const facilityRoutes = require('./routes/facilities');
 const submissionsRoutes = require('./routes/submissions');
 const ticketRoutes = require('./routes/tickets');
+const lmsRoutes = require('./routes/lms');
+
 
 const app = express();
 
@@ -21,6 +23,8 @@ app.use('/api/bookings', bookingRoutes);
 app.use('/api/facilities', facilityRoutes);
 app.use('/api/submissions', submissionsRoutes);
 app.use('/api/tickets', ticketRoutes);
+app.use('/api/lms', lmsRoutes);
+
 
 const { MongoMemoryServer } = require('mongodb-memory-server');
 const fs = require('fs');

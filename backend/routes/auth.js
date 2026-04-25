@@ -122,4 +122,29 @@ router.get('/faculty', auth, async (req, res) => {
   } catch(e) { res.status(500).json({ error: 'Server error' }); }
 });
 
+router.get('/users', auth, async (req, res) => {
+  if (req.user.role !== 'admin') return res.status(403).json({ error: 'Unauthorized' });
+  try {
+    const users = await User.find().select('-password');
+    res.json(users);
+  } catch(e) { res.status(500).json({ error: 'Server error' }); }
+});
+
+router.put('/role', auth, async (req, res) => {
+  if (req.user.role !== 'admin') return res.status(403).json({ error: 'Unauthorized' });
+  const { userId, newRole } = req.body;
+  try {
+    await User.findByIdAndUpdate(userId, { role: newRole });
+    res.json({ success: true });
+  } catch(e) { res.status(500).json({ error: 'Server error' }); }
+});
+
+router.delete('/users/:id', auth, async (req, res) => {
+  if (req.user.role !== 'admin') return res.status(403).json({ error: 'Unauthorized' });
+  try {
+    await User.findByIdAndDelete(req.params.id);
+    res.json({ success: true });
+  } catch(e) { res.status(500).json({ error: 'Server error' }); }
+});
+
 module.exports = router;
