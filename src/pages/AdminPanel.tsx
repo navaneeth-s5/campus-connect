@@ -242,13 +242,15 @@ const AdminPanel = () => {
         </div>
 
         <Tabs defaultValue="facilities" className="w-full">
-          <TabsList className="grid grid-cols-5 max-w-3xl">
-            <TabsTrigger value="facilities">Appointments</TabsTrigger>
-            <TabsTrigger value="manage_facilities">Facilities</TabsTrigger>
-            <TabsTrigger value="users">Users</TabsTrigger>
-            <TabsTrigger value="security">Security</TabsTrigger>
-            <TabsTrigger value="analytics">Analytics</TabsTrigger>
-          </TabsList>
+          <div className="overflow-x-auto pb-2">
+            <TabsList className="flex w-max min-w-full md:grid md:grid-cols-5 md:max-w-3xl">
+              <TabsTrigger value="facilities" className="whitespace-nowrap">Appointments</TabsTrigger>
+              <TabsTrigger value="manage_facilities" className="whitespace-nowrap">Facilities</TabsTrigger>
+              <TabsTrigger value="users" className="whitespace-nowrap">Users</TabsTrigger>
+              <TabsTrigger value="security" className="whitespace-nowrap">Security</TabsTrigger>
+              <TabsTrigger value="analytics" className="whitespace-nowrap">Analytics</TabsTrigger>
+            </TabsList>
+          </div>
 
           <TabsContent value="facilities" className="mt-6">
             <div className="rounded-xl border bg-card shadow-card overflow-hidden">
@@ -257,47 +259,47 @@ const AdminPanel = () => {
                   No facility bookings require approval at this time.
                 </div>
               ) : (
-                <table className="w-full text-sm">
-                  <thead className="bg-muted/50 text-left text-xs uppercase tracking-wider text-muted-foreground">
-                    <tr>
-                      <th className="p-3">User</th>
-                      <th className="p-3">College</th>
-                      <th className="p-3">Facility</th>
-                      <th className="p-3">Date & Time</th>
-                      <th className="p-3">Purpose</th>
-                      <th className="p-3">Status</th>
-                      <th className="p-3 text-right">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y border-t">
-                    {pendingBookings.map((b) => (
-                      <tr key={b.id}>
-                        <td className="p-3">
-                           <div className="font-medium">{b.userName}</div>
-                           <div className="text-xs text-muted-foreground">{b.userRole}{b.guestPhone ? ` • 📞 ${b.guestPhone}` : ''}</div>
-                        </td>
-                        <td className="p-3 font-medium text-xs">{b.userCollege}</td>
-                        <td className="p-3 font-medium">{b.facility}</td>
-                        <td className="p-3">
-                           <div>{b.date}</div>
-                           <div className="text-xs text-muted-foreground">{b.startTime} - {b.endTime}</div>
-                        </td>
-                        <td className="p-3 italic">"{b.purpose}"</td>
-                        <td className="p-3"><StatusBadge status={b.status} /></td>
-                        <td className="p-3">
-                           <div className="flex justify-end gap-2">
-                             <Button size="icon" variant="outline" className="text-success hover:text-success hover:bg-success/10" onClick={() => setStatus(b.id, "approved")}>
-                               <Check className="h-4 w-4" />
-                             </Button>
-                             <Button size="icon" variant="outline" className="text-destructive hover:text-destructive hover:bg-destructive/10" onClick={() => setStatus(b.id, "rejected")}>
-                               <X className="h-4 w-4" />
-                             </Button>
-                           </div>
-                        </td>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm min-w-[640px]">
+                    <thead className="bg-muted/50 text-left text-xs uppercase tracking-wider text-muted-foreground">
+                      <tr>
+                        <th className="p-3">User</th>
+                        <th className="p-3">Facility</th>
+                        <th className="p-3">Date & Time</th>
+                        <th className="p-3">Status</th>
+                        <th className="p-3 text-right">Actions</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody className="divide-y border-t">
+                      {pendingBookings.map((b) => (
+                        <tr key={b.id}>
+                          <td className="p-3">
+                             <div className="font-medium">{b.userName}</div>
+                             <div className="text-xs text-muted-foreground">{b.userRole}{b.guestPhone ? ` • 📞 ${b.guestPhone}` : ''}</div>
+                             <div className="text-xs text-muted-foreground">{b.userCollege}</div>
+                          </td>
+                          <td className="p-3 font-medium">{b.facility}</td>
+                          <td className="p-3">
+                             <div>{b.date}</div>
+                             <div className="text-xs text-muted-foreground">{b.startTime} - {b.endTime}</div>
+                             <div className="text-xs text-muted-foreground italic">{b.purpose}</div>
+                          </td>
+                          <td className="p-3"><StatusBadge status={b.status} /></td>
+                          <td className="p-3">
+                             <div className="flex justify-end gap-2">
+                               <Button size="icon" variant="outline" className="text-success hover:text-success hover:bg-success/10" onClick={() => setStatus(b.id, "approved")}>
+                                 <Check className="h-4 w-4" />
+                               </Button>
+                               <Button size="icon" variant="outline" className="text-destructive hover:text-destructive hover:bg-destructive/10" onClick={() => setStatus(b.id, "rejected")}>
+                                 <X className="h-4 w-4" />
+                               </Button>
+                             </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               )}
             </div>
           </TabsContent>
