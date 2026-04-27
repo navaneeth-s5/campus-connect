@@ -4,22 +4,25 @@ A modern, user-friendly web application for managing college facility bookings, 
 
 ## Features
 
-- **User Authentication**: Secure login/signup for students, faculty, and admins
+- **User Authentication**: Secure login/signup for students, faculty, and admins with dynamic course selection
 - **Facility Booking**: Reserve labs, seminar halls, and principal appointments
+- **LMS Portal**: Built-in Learning Management System for tracking student attendance, task submissions, and module progress
 - **Role-Based Access**: Different dashboards for students, faculty, and administrators
 - **Real-Time Updates**: Live booking status and availability
+- **Analytics Engine**: Real-time performance and attendance tracking for students with instructor inputs
 - **Responsive Design**: Works seamlessly on desktop, tablet, and mobile devices
-- **Modern UI**: Clean interface with dark/light theme support
+- **Modern UI**: Clean interface with dark/light theme support and glassmorphism elements
 
 ## How It Works
 
 The application uses a client-side React app with local storage for data persistence (demo mode). Users can:
 
-1. **Sign Up/Login**: Create accounts or log in with existing credentials
+1. **Sign Up/Login**: Create accounts using dynamic drop-downs mapping valid departments and courses
 2. **Browse Facilities**: View available labs, halls, and meeting slots
 3. **Book Facilities**: Select dates, times, and purposes for bookings
-4. **Manage Bookings**: View, edit, or cancel personal bookings
-5. **Admin Panel**: Admins can view usage stats and manage the system
+4. **Learning Management**: Access active courses, view assignments, and track attendance percentage
+5. **Manage Bookings**: View, edit, or cancel personal bookings
+6. **Admin Panel**: Admins can view usage stats, configure global courses, and manage the system
 
 ## Prerequisites
 
