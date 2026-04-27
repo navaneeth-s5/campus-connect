@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { Role, College, COLLEGES } from "@/types";
+import axios from "axios";
 
 const Signup = () => {
   const [name, setName] = useState("");
@@ -16,8 +17,25 @@ const Signup = () => {
   const [college, setCollege] = useState<College | "">("");
   const [password, setPassword] = useState("");
   const [role, setRole] = useState<Role>("student");
+  const [availableCourses, setAvailableCourses] = useState<{_id: string, title: string, department: string, code: string}[]>([]);
   const { signup } = useAuth();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const fetchCourses = async () => {
+      try {
+        const res = await axios.get('/api/lms/public/courses');
+        if (Array.isArray(res.data)) {
+          setAvailableCourses(res.data);
+        } else {
+          setAvailableCourses([]);
+        }
+      } catch (err) {
+        console.error("Failed to fetch courses");
+      }
+    };
+    fetchCourses();
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -33,7 +51,7 @@ const Signup = () => {
 
   return (
     <div className="flex min-h-[100dvh] bg-cover bg-center bg-fixed relative w-full" style={{ backgroundImage: `url('/kmct-campus-bg.jpg')` }}>
-      <div className="absolute inset-0 bg-black/50 backdrop-blur-[4px] pointer-events-none" />
+      <div className="absolute inset-0 bg-black/30 backdrop-blur-[2px] pointer-events-none" />
       <div className="flex-1 flex flex-col justify-center px-4 py-12 sm:px-6 lg:flex-none lg:px-20 xl:px-24 z-10 w-full">
         <div className="mx-auto w-full max-w-md bg-white/95 dark:bg-slate-950/95 p-8 rounded-2xl shadow-2xl backdrop-blur-md border border-white/20 my-auto">
           <div className="flex flex-col items-center justify-center text-center">
@@ -80,11 +98,25 @@ const Signup = () => {
               <div className="grid grid-cols-2 gap-4">
                  <div className="space-y-1.5">
                     <Label htmlFor="department">Department <span className="text-destructive">*</span></Label>
-                    <Input id="department" required placeholder="Computer Science" value={department} onChange={(e) => setDepartment(e.target.value)} />
+                    <Select value={department} onValueChange={(v) => { setDepartment(v); setCourse(""); }} required>
+                      <SelectTrigger><SelectValue placeholder="Select department" /></SelectTrigger>
+                      <SelectContent>
+                        {Array.from(new Set(availableCourses.map(c => c.department))).map(dept => (
+                          <SelectItem key={dept} value={dept}>{dept}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                  </div>
                  <div className="space-y-1.5">
                     <Label htmlFor="course">Course <span className="text-destructive">*</span></Label>
-                    <Input id="course" required placeholder="B.Tech" value={course} onChange={(e) => setCourse(e.target.value)} />
+                    <Select value={course} onValueChange={(v) => setCourse(v)} required disabled={!department}>
+                      <SelectTrigger><SelectValue placeholder="Select course" /></SelectTrigger>
+                      <SelectContent>
+                        {availableCourses.filter(c => c.department === department).map(c => (
+                          <SelectItem key={c.title} value={c.title}>{c.title}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                  </div>
               </div>
 

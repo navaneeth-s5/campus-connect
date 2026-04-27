@@ -23,6 +23,7 @@ const LMSCourseView = () => {
   const [loading, setLoading] = useState(true);
   const [activeContent, setActiveContent] = useState<any>(null);
   const [activeTab, setActiveTab] = useState<'curriculum' | 'tasks' | 'students' | 'forum'>('curriculum');
+  const [studentAnalytics, setStudentAnalytics] = useState<any[]>([]);
   
   const [isAddingTask, setIsAddingTask] = useState(false);
   const [enrollRollNumber, setEnrollRollNumber] = useState("");
@@ -60,6 +61,23 @@ const LMSCourseView = () => {
       console.error("Failed to load tasks");
     }
   };
+
+  const fetchStudentAnalytics = async () => {
+    if (user?.role === 'faculty' || user?.role === 'admin') {
+      try {
+        const res = await axios.get(`/api/lms/analytics/${id}`);
+        setStudentAnalytics(Array.isArray(res.data) ? res.data : []);
+      } catch (err) {
+        console.error("Failed to load student analytics");
+      }
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab === 'students') {
+      fetchStudentAnalytics();
+    }
+  }, [activeTab, id, user?.role]);
 
   const handleEnrollStudent = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -123,6 +141,16 @@ const LMSCourseView = () => {
       toast.success("Material added successfully");
       fetchCourseDetails();
     } catch (err) { toast.error("Failed to add material"); }
+  };
+
+  const handleUpdateAttendance = async (studentId: string, value: string) => {
+    const numValue = Number(value);
+    if (isNaN(numValue) || numValue < 0 || numValue > 100) return;
+    try {
+      await axios.post(`/api/lms/courses/${id}/students/${studentId}/analytics`, { attendancePercentage: numValue });
+      toast.success("Attendance updated");
+      fetchStudentAnalytics();
+    } catch (err) { toast.error("Failed to update attendance"); }
   };
 
   if (loading) return <AppShell><div className="flex items-center justify-center h-64">Loading course...</div></AppShell>;
@@ -327,15 +355,29 @@ const LMSCourseView = () => {
                     </form>
                   </div>
                   <div className="grid md:grid-cols-2 gap-4">
-                    {Array.isArray(course.students) && course.students.map((student: any) => (
-                      <div key={student._id} className="p-4 rounded-2xl border bg-card flex items-center gap-4">
-                        <div className="h-10 w-10 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold">{student.name?.charAt(0)}</div>
-                        <div>
-                          <div className="font-bold">{student.name}</div>
-                          <div className="text-xs text-muted-foreground">{student.rollNumber}</div>
+                    {Array.isArray(course.students) && course.students.map((student: any) => {
+                      const sAnalytics = studentAnalytics.find(a => a.userId?._id === student._id || a.userId === student._id);
+                      return (
+                        <div key={student._id} className="p-4 rounded-2xl border bg-card flex items-center justify-between gap-4">
+                          <div className="flex items-center gap-4">
+                            <div className="h-10 w-10 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold">{student.name?.charAt(0)}</div>
+                            <div>
+                              <div className="font-bold">{student.name}</div>
+                              <div className="text-xs text-muted-foreground">{student.rollNumber}</div>
+                            </div>
+                          </div>
+                          <div className="flex flex-col items-end gap-1">
+                            <span className="text-[10px] uppercase font-bold text-muted-foreground">Attendance %</span>
+                            <Input 
+                              type="number" 
+                              className="w-20 h-8 text-center" 
+                              defaultValue={sAnalytics?.attendancePercentage || 0}
+                              onBlur={(e) => handleUpdateAttendance(student._id, e.target.value)}
+                            />
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
               )}

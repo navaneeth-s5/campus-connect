@@ -12,6 +12,7 @@ const LMSPortal = () => {
   const { user } = useAuth();
   const [courses, setCourses] = useState<LMSCourse[]>([]);
   const [loading, setLoading] = useState(true);
+  const [analytics, setAnalytics] = useState<any>(null);
 
   useEffect(() => {
     fetchCourses();
@@ -20,7 +21,15 @@ const LMSPortal = () => {
   const fetchCourses = async () => {
     try {
       const res = await axios.get('/api/lms/courses');
-      setCourses(Array.isArray(res.data) ? res.data : []);
+      const fetchedCourses = Array.isArray(res.data) ? res.data : [];
+      setCourses(fetchedCourses);
+      
+      if (user?.role === 'student' && fetchedCourses.length > 0) {
+        // Fetch analytics for the first course or overall
+        // We will just fetch for the first course for now to get some real data
+        const analyticsRes = await axios.get(`/api/lms/analytics/${fetchedCourses[0]._id}`);
+        setAnalytics(analyticsRes.data);
+      }
     } catch (err) {
       toast.error("Failed to load courses");
       setCourses([]);
@@ -30,6 +39,7 @@ const LMSPortal = () => {
   };
 
   const isFaculty = user?.role === 'faculty' || user?.role === 'admin';
+  const totalStudents = courses.reduce((acc, course) => acc + (course.students?.length || 0), 0);
 
   return (
     <AppShell>
@@ -69,30 +79,34 @@ const LMSPortal = () => {
               <div className="p-3 rounded-xl bg-blue-500/10 text-blue-500"><Users className="h-6 w-6" /></div>
               <div>
                 <div className="text-sm font-medium text-muted-foreground">{isFaculty ? "Total Students" : "Course Rank"}</div>
-                <div className="text-2xl font-bold">{isFaculty ? "124" : "Top 10%"}</div>
+                <div className="text-2xl font-bold">{isFaculty ? totalStudents : "Top 10%"}</div>
               </div>
             </div>
           </div>
 
-          <div className="rounded-2xl border bg-card p-6 shadow-sm hover:shadow-md transition-shadow">
-            <div className="flex items-center gap-4">
-              <div className="p-3 rounded-xl bg-orange-500/10 text-orange-500"><AlertCircle className="h-6 w-6" /></div>
-              <div>
-                <div className="text-sm font-medium text-muted-foreground">{isFaculty ? "Pending Tasks" : "Due Soon"}</div>
-                <div className="text-2xl font-bold">4</div>
+          {!isFaculty && (
+            <div className="rounded-2xl border bg-card p-6 shadow-sm hover:shadow-md transition-shadow">
+              <div className="flex items-center gap-4">
+                <div className="p-3 rounded-xl bg-orange-500/10 text-orange-500"><AlertCircle className="h-6 w-6" /></div>
+                <div>
+                  <div className="text-sm font-medium text-muted-foreground">Due Soon</div>
+                  <div className="text-2xl font-bold">0</div>
+                </div>
               </div>
             </div>
-          </div>
+          )}
 
-          <div className="rounded-2xl border bg-card p-6 shadow-sm hover:shadow-md transition-shadow">
-            <div className="flex items-center gap-4">
-              <div className="p-3 rounded-xl bg-green-500/10 text-green-500"><Award className="h-6 w-6" /></div>
-              <div>
-                <div className="text-sm font-medium text-muted-foreground">GPA / Performance</div>
-                <div className="text-2xl font-bold">{isFaculty ? "84%" : "3.8"}</div>
+          {!isFaculty && (
+            <div className="rounded-2xl border bg-card p-6 shadow-sm hover:shadow-md transition-shadow">
+              <div className="flex items-center gap-4">
+                <div className="p-3 rounded-xl bg-green-500/10 text-green-500"><Award className="h-6 w-6" /></div>
+                <div>
+                  <div className="text-sm font-medium text-muted-foreground">Performance / Attendance</div>
+                  <div className="text-2xl font-bold">{analytics ? `${analytics.attendancePercentage || 0}%` : "N/A"}</div>
+                </div>
               </div>
             </div>
-          </div>
+          )}
         </div>
 
         <section>

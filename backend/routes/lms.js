@@ -12,6 +12,16 @@ const LMSSubmission = require('../models/LMSSubmission');
 
 // --- Course Management ---
 
+// Get all courses (Public for signup)
+router.get('/public/courses', async (req, res) => {
+  try {
+    const courses = await Course.find().select('title department _id code');
+    res.json(courses);
+  } catch (err) {
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 // Get courses for current user
 router.get('/courses', auth, async (req, res) => {
   try {
@@ -275,6 +285,31 @@ router.post('/progress/:courseId', auth, async (req, res) => {
     res.status(500).json({ error: 'Server error' });
   }
 });
+
+// Update student analytics (Faculty)
+router.post('/courses/:courseId/students/:studentId/analytics', auth, async (req, res) => {
+  if (req.user.role !== 'faculty' && req.user.role !== 'admin') {
+    return res.status(403).json({ error: 'Unauthorized' });
+  }
+  const { attendancePercentage } = req.body;
+  try {
+    let analytics = await LMSAnalytics.findOne({ userId: req.params.studentId, courseId: req.params.courseId });
+    if (!analytics) {
+      analytics = new LMSAnalytics({ userId: req.params.studentId, courseId: req.params.courseId });
+    }
+    
+    if (attendancePercentage !== undefined) {
+      analytics.attendancePercentage = attendancePercentage;
+    }
+    
+    await analytics.save();
+    res.json(analytics);
+  } catch (err) {
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+
 
 // Get analytics (Faculty/Admin for course, Student for self)
 router.get('/analytics/:courseId', auth, async (req, res) => {
