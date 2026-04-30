@@ -24,6 +24,8 @@ import LMSPortal from "./pages/LMSPortal.tsx";
 import LMSCourseView from "./pages/LMSCourseView.tsx";
 import LMSAdmin from "./pages/LMSAdmin.tsx";
 import KioskBrowser from "./pages/KioskBrowser.tsx";
+import LeaveManagement from "./pages/LeaveManagement.tsx";
+import { CampusBuddy } from "@/components/CampusBuddy";
 
 
 const queryClient = new QueryClient();
@@ -144,6 +146,14 @@ const App = () => (
                   </ProtectedRoute>
                 }
               />
+              <Route
+                path="/leaves"
+                element={
+                  <ProtectedRoute roles={["faculty"]}>
+                    <LeaveManagement />
+                  </ProtectedRoute>
+                }
+              />
 
               <Route
                 path="/kiosk-view"
@@ -151,6 +161,7 @@ const App = () => (
               />
               <Route path="*" element={<Navigate to="/dashboard" replace />} />
             </Routes>
+            <CampusBuddy />
           </BookingProvider>
         </AuthProvider>
       </BrowserRouter>

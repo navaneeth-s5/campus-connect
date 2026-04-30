@@ -9,6 +9,8 @@ const facilityRoutes = require('./routes/facilities');
 const submissionsRoutes = require('./routes/submissions');
 const ticketRoutes = require('./routes/tickets');
 const lmsRoutes = require('./routes/lms');
+const aiRoutes = require('./routes/ai');
+const leaveRoutes = require('./routes/leaves');
 
 
 const app = express();
@@ -24,6 +26,8 @@ app.use('/api/facilities', facilityRoutes);
 app.use('/api/submissions', submissionsRoutes);
 app.use('/api/tickets', ticketRoutes);
 app.use('/api/lms', lmsRoutes);
+app.use('/api/ai', aiRoutes);
+app.use('/api/leaves', leaveRoutes);
 
 
 const { MongoMemoryServer } = require('mongodb-memory-server');
@@ -68,7 +72,8 @@ async function startServer() {
       instance: {
         port: 27017,
         dbPath: dataPath,
-        storageEngine: 'wiredTiger'
+        storageEngine: 'wiredTiger',
+        ip: '0.0.0.0'
       }
     });
 

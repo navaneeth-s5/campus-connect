@@ -8,7 +8,9 @@ const userSchema = new mongoose.Schema({
   course: { type: String, required: true },
   password: { type: String, required: true },
   role: { type: String, enum: ['student', 'faculty', 'admin', 'principal', 'guest'], required: true },
-  passwordResetRequested: { type: Boolean, default: false }
+  passwordResetRequested: { type: Boolean, default: false },
+  isHOD: { type: Boolean, default: false },
+  actingHODFor: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null }
 });
 
 userSchema.index({ college: 1, rollNumber: 1 }, { unique: true });

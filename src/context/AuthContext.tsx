@@ -36,7 +36,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
       try {
         const res = await axios.get('/api/auth/me');
-        setUser({ id: res.data._id || res.data.id, name: res.data.name, rollNumber: res.data.rollNumber, college: res.data.college, role: res.data.role, department: res.data.department, course: res.data.course });
+        setUser({ 
+          id: res.data._id || res.data.id, 
+          name: res.data.name, 
+          rollNumber: res.data.rollNumber, 
+          college: res.data.college, 
+          role: res.data.role, 
+          department: res.data.department, 
+          course: res.data.course, 
+          isHOD: res.data.isHOD === true || res.data.isHOD === 'true'
+        });
       } catch (err) {
         localStorage.removeItem('token');
         setUser(null);

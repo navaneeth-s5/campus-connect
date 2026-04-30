@@ -5,6 +5,20 @@ const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const auth = require('../middleware/auth');
 
+// Get Leadership Directory (Users in same college)
+router.get('/directory', auth, async (req, res) => {
+    try {
+        let query = {};
+        if (req.user.college !== 'Global') {
+            query.college = req.user.college;
+        }
+        const users = await User.find(query, 'name role department isHOD actingHODFor').populate('actingHODFor', 'name');
+        res.json(users);
+    } catch (error) {
+        res.status(500).json({ error: "Failed to fetch directory" });
+    }
+});
+
 const generateToken = (user) => {
   return jwt.sign(
     { id: user._id, name: user.name, rollNumber: user.rollNumber, college: user.college, role: user.role },
@@ -79,7 +93,19 @@ router.post('/login', async (req, res) => {
     if (!validPassword) return res.status(400).json({ error: 'Invalid credentials' });
 
     const token = generateToken(user);
-    res.json({ token, user: { id: user._id, name: user.name, rollNumber: user.rollNumber, college: user.college, role: user.role } });
+    res.json({ 
+      token, 
+      user: { 
+        id: user._id, 
+        name: user.name, 
+        rollNumber: user.rollNumber, 
+        college: user.college, 
+        role: user.role,
+        department: user.department,
+        course: user.course,
+        isHOD: !!user.isHOD 
+      } 
+    });
   } catch (err) {
     res.status(500).json({ error: 'Server error' });
   }
@@ -137,6 +163,41 @@ router.put('/role', auth, async (req, res) => {
     await User.findByIdAndUpdate(userId, { role: newRole });
     res.json({ success: true });
   } catch(e) { res.status(500).json({ error: 'Server error' }); }
+});
+
+router.put('/assign-hod', auth, async (req, res) => {
+  if (req.user.role !== 'principal') return res.status(403).json({ error: 'Unauthorized' });
+  const { userId, isHOD, department } = req.body;
+  try {
+    const userToUpdate = await User.findById(userId);
+    if (!userToUpdate) return res.status(404).json({ error: 'User not found' });
+
+    // Ensure we are working with consistent department names
+    const targetDept = (department || userToUpdate.department).trim();
+
+    if (isHOD) {
+      // ENFORCE SINGLE HOD: Unset any existing HOD in this department for this specific college
+      const result = await User.updateMany(
+        { 
+          college: userToUpdate.college, 
+          department: { $regex: new RegExp(`^${targetDept.trim()}$`, 'i') }, 
+          isHOD: true,
+          _id: { $ne: userId }
+        },
+        { isHOD: false }
+      );
+      console.log(`HOD Cleanup for ${targetDept}: Unset ${result.modifiedCount} previous HODs.`);
+    }
+
+    userToUpdate.isHOD = !!isHOD;
+    if (department) userToUpdate.department = targetDept;
+    
+    await userToUpdate.save();
+    res.json({ success: true, isHOD: userToUpdate.isHOD });
+  } catch(e) { 
+    console.error("Assign HOD error:", e);
+    res.status(500).json({ error: 'Server error' }); 
+  }
 });
 
 router.delete('/users/:id', auth, async (req, res) => {

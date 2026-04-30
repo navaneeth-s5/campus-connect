@@ -17,6 +17,8 @@ export interface User {
   department?: string;
   course?: string;
   role: Role;
+  isHOD?: boolean;
+  actingHODFor?: string | Partial<User>;
 }
 
 export type Facility = string;
@@ -30,7 +32,7 @@ export interface IFacility {
   hasAssetManagement?: boolean;
 }
 
-export type BookingStatus = "pending" | "approved" | "rejected";
+export type BookingStatus = "pending" | "approved" | "rejected" | "pending_hod" | "pending_principal" | "revoked";
 
 export type TicketStatus = "open" | "in-progress" | "resolved" | "closed";
 export type TicketPriority = "low" | "medium" | "high" | "critical";
