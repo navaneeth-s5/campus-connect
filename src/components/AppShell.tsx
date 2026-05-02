@@ -144,16 +144,19 @@ export const AppShell = ({ children }: { children: ReactNode }) => {
           </nav>
 
           <div className="px-4 py-4 border-t border-sidebar-border space-y-3 shrink-0">
-            <div>
-              <div className="text-sm font-semibold truncate">{user.name}</div>
-              <div className="text-xs opacity-75">
+            <NavLink 
+              to="/profile" 
+              className="block group hover:bg-sidebar-accent/50 p-3 rounded-xl transition-all border border-transparent hover:border-sidebar-border"
+            >
+              <div className="text-sm font-bold truncate group-hover:text-sidebar-primary-foreground transition-colors">{user.name}</div>
+              <div className="text-[10px] opacity-75 uppercase tracking-wider font-bold">
                 {roleLabel} • {user.college}
               </div>
-            </div>
+            </NavLink>
             <Button
               variant="secondary"
               size="sm"
-              className="w-full"
+              className="w-full shadow-sm"
               onClick={handleLogout}
             >
               <LogOut className="h-4 w-4 mr-2" /> Sign out
@@ -188,7 +191,11 @@ export const AppShell = ({ children }: { children: ReactNode }) => {
 
               {/* User info */}
               <div className="px-5 py-4 border-b border-sidebar-border">
-                <div className="flex items-center gap-3">
+                <NavLink 
+                  to="/profile" 
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="flex items-center gap-3 p-2 -m-2 rounded-xl active:bg-sidebar-accent transition-colors"
+                >
                   <div className="h-10 w-10 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-sm">
                     {user.name.charAt(0)}
                   </div>
@@ -198,7 +205,7 @@ export const AppShell = ({ children }: { children: ReactNode }) => {
                       {roleLabel} • {user.rollNumber}
                     </div>
                   </div>
-                </div>
+                </NavLink>
               </div>
 
               <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">

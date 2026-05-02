@@ -15,6 +15,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
+import { isWithinInterval, startOfDay, parseISO, format } from "date-fns";
+import { UserCog, Calendar as CalendarIcon, UserCheck, Search } from "lucide-react";
+import { PaginatedSection } from "@/components/PaginatedSection";
 
 const AdminPanel = () => {
   const { bookings = [], setStatus, loadingBookings } = useBookings();
@@ -28,6 +31,7 @@ const AdminPanel = () => {
   const [hasAssetManagement, setHasAssetManagement] = useState(true);
   const [facultiesList, setFacultiesList] = useState<any[]>([]);
   const [allUsers, setAllUsers] = useState<any[]>([]);
+  const [leaves, setLeaves] = useState<any[]>([]);
 
   
   const [selectedFacilityForAssets, setSelectedFacilityForAssets] = useState<IFacility | null>(null);
@@ -69,17 +73,31 @@ const AdminPanel = () => {
     } catch(e) {}
   };
 
+  const fetchLeaves = async () => {
+    try {
+      const res = await axios.get('/api/leaves', {
+        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
+      });
+      setLeaves(res.data);
+    } catch (e) {}
+  };
 
-  useEffect(() => {
-     fetchResets();
-     fetchFacilities();
-     fetchFacultyList();
-     fetchAllUsers();
 
-     const socket = io();
-     socket.on('booking_update', () => fetchResets()); // arbitrary re-trigger could be useful
-     return () => { socket.disconnect(); };
-  }, []);
+   useEffect(() => {
+      fetchResets();
+      fetchFacilities();
+      fetchFacultyList();
+      fetchAllUsers();
+      fetchLeaves();
+ 
+      const socket = io();
+      socket.on('booking_update', () => {
+        fetchResets();
+        fetchLeaves();
+      });
+      socket.on('new_leave_request', () => fetchLeaves());
+      return () => { socket.disconnect(); };
+   }, []);
 
   const handleAddFacility = async (e: React.FormEvent) => {
      e.preventDefault();
@@ -247,60 +265,62 @@ const AdminPanel = () => {
               <TabsTrigger value="facilities" className="whitespace-nowrap">Appointments</TabsTrigger>
               <TabsTrigger value="manage_facilities" className="whitespace-nowrap">Facilities</TabsTrigger>
               <TabsTrigger value="users" className="whitespace-nowrap">Users</TabsTrigger>
+              <TabsTrigger value="leaves" className="whitespace-nowrap">Leaves</TabsTrigger>
               <TabsTrigger value="security" className="whitespace-nowrap">Security</TabsTrigger>
               <TabsTrigger value="analytics" className="whitespace-nowrap">Analytics</TabsTrigger>
             </TabsList>
           </div>
 
           <TabsContent value="facilities" className="mt-6">
-            <div className="rounded-xl border bg-card shadow-card overflow-hidden">
-              {pendingBookings.length === 0 ? (
-                <div className="p-10 text-center text-muted-foreground">
-                  No facility bookings require approval at this time.
-                </div>
-              ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm min-w-[640px]">
-                    <thead className="bg-muted/50 text-left text-xs uppercase tracking-wider text-muted-foreground">
-                      <tr>
-                        <th className="p-3">User</th>
-                        <th className="p-3">Facility</th>
-                        <th className="p-3">Date & Time</th>
-                        <th className="p-3">Status</th>
-                        <th className="p-3 text-right">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y border-t">
-                      {pendingBookings.map((b) => (
-                        <tr key={b.id}>
-                          <td className="p-3">
-                             <div className="font-medium">{b.userName}</div>
-                             <div className="text-xs text-muted-foreground">{b.userRole}{b.guestPhone ? ` • 📞 ${b.guestPhone}` : ''}</div>
-                             <div className="text-xs text-muted-foreground">{b.userCollege}</div>
-                          </td>
-                          <td className="p-3 font-medium">{b.facility}</td>
-                          <td className="p-3">
-                             <div>{b.date}</div>
-                             <div className="text-xs text-muted-foreground">{b.startTime} - {b.endTime}</div>
-                             <div className="text-xs text-muted-foreground italic">{b.purpose}</div>
-                          </td>
-                          <td className="p-3"><StatusBadge status={b.status} /></td>
-                          <td className="p-3">
-                             <div className="flex justify-end gap-2">
-                               <Button size="icon" variant="outline" className="text-success hover:text-success hover:bg-success/10" onClick={() => setStatus(b.id, "approved")}>
-                                 <Check className="h-4 w-4" />
-                               </Button>
-                               <Button size="icon" variant="outline" className="text-destructive hover:text-destructive hover:bg-destructive/10" onClick={() => setStatus(b.id, "rejected")}>
-                                 <X className="h-4 w-4" />
-                               </Button>
-                             </div>
-                          </td>
+            <div className="rounded-xl border bg-card shadow-card overflow-hidden p-6">
+              <h3 className="text-lg font-bold mb-4">Pending Appointments</h3>
+              <PaginatedSection
+                items={pendingBookings}
+                searchPlaceholder="Search by name, facility, or purpose..."
+                renderItem={(paginatedBookings) => (
+                  <div className="overflow-x-auto border rounded-lg">
+                    <table className="w-full text-sm min-w-[640px]">
+                      <thead className="bg-muted/50 text-left text-xs uppercase tracking-wider text-muted-foreground">
+                        <tr>
+                          <th className="p-3">User</th>
+                          <th className="p-3">Facility</th>
+                          <th className="p-3">Date & Time</th>
+                          <th className="p-3">Status</th>
+                          <th className="p-3 text-right">Actions</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
+                      </thead>
+                      <tbody className="divide-y border-t">
+                        {paginatedBookings.map((b) => (
+                          <tr key={b.id} className="hover:bg-muted/30 transition-colors">
+                            <td className="p-3">
+                               <div className="font-medium">{b.userName}</div>
+                               <div className="text-xs text-muted-foreground">{b.userRole}{b.guestPhone ? ` • 📞 ${b.guestPhone}` : ''}</div>
+                               <div className="text-xs text-muted-foreground">{b.userCollege}</div>
+                            </td>
+                            <td className="p-3 font-medium">{b.facility}</td>
+                            <td className="p-3">
+                               <div>{b.date}</div>
+                               <div className="text-xs text-muted-foreground">{b.startTime} - {b.endTime}</div>
+                               <div className="text-xs text-muted-foreground italic">{b.purpose}</div>
+                            </td>
+                            <td className="p-3"><StatusBadge status={b.status} /></td>
+                            <td className="p-3">
+                               <div className="flex justify-end gap-2">
+                                 <Button size="icon" variant="outline" className="text-success hover:text-success hover:bg-success/10" onClick={() => setStatus(b.id, "approved")}>
+                                   <Check className="h-4 w-4" />
+                                 </Button>
+                                 <Button size="icon" variant="outline" className="text-destructive hover:text-destructive hover:bg-destructive/10" onClick={() => setStatus(b.id, "rejected")}>
+                                   <X className="h-4 w-4" />
+                                 </Button>
+                               </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              />
             </div>
           </TabsContent>
 
@@ -434,53 +454,166 @@ const AdminPanel = () => {
           </TabsContent>
 
            <TabsContent value="users" className="mt-6">
-             <div className="rounded-xl border bg-card shadow-card p-6">
-               <h3 className="text-lg font-bold mb-4 flex items-center gap-2"><Plus className="h-5 w-5" /> User Management</h3>
-               <div className="overflow-x-auto">
-                 <table className="w-full text-sm text-left">
-                   <thead className="bg-muted text-xs uppercase text-muted-foreground">
-                     <tr>
-                       <th className="p-3">User</th>
-                       <th className="p-3">Roll Number</th>
-                       <th className="p-3">Department</th>
-                       <th className="p-3">Role</th>
-                       <th className="p-3">Actions</th>
-                     </tr>
-                   </thead>
-                   <tbody className="divide-y">
-                     {Array.isArray(allUsers) && allUsers.map(u => (
-                       <tr key={u._id}>
-                         <td className="p-3">
-                           <div className="font-medium">{u.name}</div>
-                           <div className="text-xs text-muted-foreground">{u.college}</div>
-                         </td>
-                         <td className="p-3">{u.rollNumber}</td>
-                         <td className="p-3">{u.department}</td>
-                         <td className="p-3 uppercase font-bold text-xs">{u.role}</td>
-                         <td className="p-3">
-                           <div className="flex items-center gap-2">
-                             <Select value={u.role} onValueChange={(val) => handleUpdateRole(u._id, val)}>
-                               <SelectTrigger className="h-8 w-32"><SelectValue /></SelectTrigger>
-                               <SelectContent>
-                                 <SelectItem value="student">Student</SelectItem>
-                                 <SelectItem value="faculty">Faculty</SelectItem>
-                                 <SelectItem value="admin">Admin</SelectItem>
-                                 <SelectItem value="principal">Principal</SelectItem>
-                                 <SelectItem value="guest">Guest</SelectItem>
-                               </SelectContent>
-                             </Select>
-                             <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10" onClick={() => handleDeleteUser(u._id)}>
-                               <Trash2 className="h-4 w-4" />
-                             </Button>
-                           </div>
-                         </td>
-                       </tr>
-                     ))}
-                   </tbody>
-                 </table>
-               </div>
-             </div>
-           </TabsContent>
+              <div className="rounded-xl border bg-card shadow-card p-6">
+                <h3 className="text-lg font-bold mb-4 flex items-center gap-2"><Plus className="h-5 w-5" /> User Management</h3>
+                <PaginatedSection
+                  items={allUsers}
+                  searchPlaceholder="Search users by name, roll number, department..."
+                  renderItem={(paginatedUsers) => (
+                    <div className="overflow-x-auto border rounded-lg">
+                      <table className="w-full text-sm text-left">
+                        <thead className="bg-muted text-xs uppercase text-muted-foreground">
+                          <tr>
+                            <th className="p-3">User</th>
+                            <th className="p-3">Roll Number</th>
+                            <th className="p-3">Department</th>
+                            <th className="p-3">Role</th>
+                            <th className="p-3">Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y">
+                          {paginatedUsers.map(u => (
+                            <tr key={u._id} className="hover:bg-muted/30 transition-colors">
+                              <td className="p-3">
+                                <div className="font-medium">{u.name}</div>
+                                <div className="text-xs text-muted-foreground">{u.college}</div>
+                              </td>
+                              <td className="p-3">{u.rollNumber}</td>
+                              <td className="p-3">{u.department}</td>
+                              <td className="p-3 uppercase font-bold text-xs">{u.role}</td>
+                              <td className="p-3">
+                                <div className="flex items-center gap-2">
+                                  <Select value={u.role} onValueChange={(val) => handleUpdateRole(u._id, val)}>
+                                    <SelectTrigger className="h-8 w-32"><SelectValue /></SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="student">Student</SelectItem>
+                                      <SelectItem value="faculty">Faculty</SelectItem>
+                                      <SelectItem value="admin">Admin</SelectItem>
+                                      <SelectItem value="principal">Principal</SelectItem>
+                                      <SelectItem value="guest">Guest</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                  <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10" onClick={() => handleDeleteUser(u._id)}>
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                />
+              </div>
+            </TabsContent>
+
+            <TabsContent value="leaves" className="mt-6">
+              <div className="space-y-6">
+                <div className="grid md:grid-cols-2 gap-6">
+                  {/* On Leave Today */}
+                  <div className="rounded-xl border bg-card shadow-sm p-6">
+                    <h3 className="text-lg font-bold mb-4 flex items-center gap-2 text-primary">
+                      <UserCheck className="h-5 w-5" /> On Leave Today
+                    </h3>
+                    <div className="space-y-3">
+                      {(() => {
+                        const today = startOfDay(new Date());
+                        const onLeave = leaves.filter(l => 
+                          l.status === 'approved' && 
+                          isWithinInterval(today, { 
+                            start: startOfDay(parseISO(l.startDate)), 
+                            end: startOfDay(parseISO(l.endDate)) 
+                          })
+                        );
+                        
+                        return onLeave.length === 0 ? (
+                          <p className="text-sm text-muted-foreground italic">No faculty members on leave today.</p>
+                        ) : onLeave.map(l => (
+                          <div key={l._id} className="p-3 rounded-lg border bg-muted/20 flex justify-between items-center">
+                            <div>
+                              <div className="font-semibold text-sm">{l.userName}</div>
+                              <div className="text-[10px] text-muted-foreground uppercase">{l.department} • {l.college}</div>
+                            </div>
+                            <div className="text-[10px] font-bold text-primary bg-primary/10 px-2 py-1 rounded">
+                              UNTIL {format(parseISO(l.endDate), "MMM d")}
+                            </div>
+                          </div>
+                        ));
+                      })()}
+                    </div>
+                  </div>
+
+                  {/* Pending Approvals */}
+                  <div className="rounded-xl border bg-card shadow-sm p-6">
+                    <h3 className="text-lg font-bold mb-4 flex items-center gap-2 text-orange-600">
+                      <CalendarIcon className="h-5 w-5" /> Pending Leave Approvals
+                    </h3>
+                    <div className="space-y-3">
+                      {(() => {
+                        const pending = leaves.filter(l => ['pending_hod', 'pending_principal'].includes(l.status));
+                        
+                        return pending.length === 0 ? (
+                          <p className="text-sm text-muted-foreground italic">No pending leave requests.</p>
+                        ) : pending.map(l => (
+                          <div key={l._id} className="p-3 rounded-lg border bg-orange-50/50 border-orange-100 flex justify-between items-center">
+                            <div>
+                              <div className="font-semibold text-sm">{l.userName}</div>
+                              <div className="text-[10px] text-muted-foreground italic line-clamp-1">{l.reason}</div>
+                            </div>
+                            <StatusBadge status={l.status} />
+                          </div>
+                        ));
+                      })()}
+                    </div>
+                  </div>
+                </div>
+
+                {/* All Leaves Table */}
+                <div className="rounded-xl border bg-card shadow-sm p-6">
+                  <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
+                    <UserCog className="h-5 w-5" /> All Leave History
+                  </h3>
+                  <PaginatedSection
+                    items={leaves}
+                    searchPlaceholder="Search leaves by faculty name, department, reason..."
+                    renderItem={(paginatedLeaves) => (
+                      <div className="overflow-x-auto border rounded-lg">
+                        <table className="w-full text-sm text-left">
+                          <thead className="bg-muted text-xs uppercase text-muted-foreground">
+                            <tr>
+                              <th className="p-3">Faculty</th>
+                              <th className="p-3">Period</th>
+                              <th className="p-3">Reason</th>
+                              <th className="p-3">Status</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y">
+                            {paginatedLeaves.map(l => (
+                              <tr key={l._id} className="hover:bg-muted/30 transition-colors">
+                                <td className="p-3">
+                                  <div className="font-medium text-sm">{l.userName}</div>
+                                  <div className="text-[10px] text-muted-foreground">{l.department}</div>
+                                </td>
+                                <td className="p-3 text-xs">
+                                  {format(parseISO(l.startDate), "MMM d")} - {format(parseISO(l.endDate), "MMM d, yyyy")}
+                                </td>
+                                <td className="p-3 text-xs italic text-muted-foreground max-w-[200px] truncate">
+                                  {l.reason}
+                                </td>
+                                <td className="p-3">
+                                  <StatusBadge status={l.status} />
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                  />
+                </div>
+              </div>
+            </TabsContent>
 
           <TabsContent value="security" className="mt-6">
              <div className="rounded-xl border bg-card shadow-card p-6">

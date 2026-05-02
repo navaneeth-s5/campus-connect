@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { LMSCourse, User as UserType } from "@/types";
+import { PaginatedSection } from "@/components/PaginatedSection";
 
 const LMSAdmin = () => {
   const [courses, setCourses] = useState<LMSCourse[]>([]);
@@ -48,12 +49,16 @@ const LMSAdmin = () => {
 
   const handleCreateCourse = async (e: React.FormEvent) => {
     e.preventDefault();
+    const courseData = {
+      ...newCourse,
+      facultyId: newCourse.facultyId || null
+    };
     try {
       if (editingCourse) {
-        await axios.put(`/api/lms/courses/${editingCourse._id || editingCourse.id}`, newCourse);
+        await axios.put(`/api/lms/courses/${editingCourse._id || editingCourse.id}`, courseData);
         toast.success("Course updated successfully");
       } else {
-        await axios.post('/api/lms/courses', newCourse);
+        await axios.post('/api/lms/courses', courseData);
         toast.success("Course created successfully");
       }
       setIsAddingCourse(false);
@@ -142,7 +147,6 @@ const LMSAdmin = () => {
                   className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
                   value={newCourse.facultyId}
                   onChange={e => setNewCourse({...newCourse, facultyId: e.target.value})}
-                  required
                 >
                   <option value="">Select Faculty</option>
                   {Array.isArray(faculties) && faculties.map(f => (
@@ -166,54 +170,53 @@ const LMSAdmin = () => {
           </div>
         )}
 
-        <div className="rounded-2xl border bg-card overflow-hidden shadow-sm">
-          <table className="w-full text-left text-sm">
-            <thead className="bg-muted/50 font-bold border-b">
-              <tr>
-                <th className="p-4">Course</th>
-                <th className="p-4">Department</th>
-                <th className="p-4">Faculty</th>
-                <th className="p-4 text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y">
-              {courses.map(course => (
-                <tr key={course._id || course.id} className="hover:bg-muted/30 transition-colors">
-                  <td className="p-4">
-                    <div className="font-bold">{course.title}</div>
-                    <div className="text-xs text-muted-foreground">{course.code}</div>
-                  </td>
-                  <td className="p-4">{course.department}</td>
-                  <td className="p-4">
-                    <div className="flex items-center gap-2">
-                      <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary">
-                        {course.faculty?.name?.charAt(0) || 'F'}
-                      </div>
-                      <span>{course.faculty?.name || 'Unassigned'}</span>
-                    </div>
-                  </td>
-                  <td className="p-4">
-                    <div className="flex items-center justify-end gap-2">
-                      <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary" onClick={() => handleEdit(course)}>
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive" onClick={() => setCourseToDelete(course)}>
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-              {courses.length === 0 && (
-                <tr>
-                  <td colSpan={4} className="p-12 text-center text-muted-foreground">
-                    No courses created yet.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+        <PaginatedSection
+          items={courses}
+          searchPlaceholder="Search courses by title, code, department, faculty..."
+          renderItem={(paginatedCourses) => (
+            <div className="rounded-2xl border bg-card overflow-hidden shadow-sm border-b-0 rounded-b-none">
+              <table className="w-full text-left text-sm">
+                <thead className="bg-muted/50 font-bold border-b">
+                  <tr>
+                    <th className="p-4">Course</th>
+                    <th className="p-4">Department</th>
+                    <th className="p-4">Faculty</th>
+                    <th className="p-4 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y">
+                  {paginatedCourses.map(course => (
+                    <tr key={course._id || course.id} className="hover:bg-muted/30 transition-colors">
+                      <td className="p-4">
+                        <div className="font-bold">{course.title}</div>
+                        <div className="text-xs text-muted-foreground">{course.code}</div>
+                      </td>
+                      <td className="p-4">{course.department}</td>
+                      <td className="p-4">
+                        <div className="flex items-center gap-2">
+                          <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary">
+                            {course.faculty?.name?.charAt(0) || 'F'}
+                          </div>
+                          <span>{course.faculty?.name || 'Unassigned'}</span>
+                        </div>
+                      </td>
+                      <td className="p-4">
+                        <div className="flex items-center justify-end gap-2">
+                          <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary" onClick={() => handleEdit(course)}>
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive" onClick={() => setCourseToDelete(course)}>
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        />
       </div>
 
       {/* Custom Deletion Modal */}

@@ -81,13 +81,31 @@ router.get('/', auth, async (req, res) => {
         }
         
         if (req.user.role === 'faculty') {
-            query.userId = req.user.id;
+            // Faculty can see their own leaves (all states) OR ANY approved leaves across campus
+            query = {
+                $or: [
+                    { userId: req.user.id },
+                    { status: 'approved' }
+                ]
+            };
         } else if (req.user.role !== 'principal' && req.user.role !== 'admin') {
              return res.status(403).json({ error: "Unauthorized" });
         }
         
-        const leaves = await Leave.find(query).sort({ createdAt: -1 });
-        console.log(`Found ${leaves.length} leaves for query:`, query);
+        let leaves = await Leave.find(query).sort({ createdAt: -1 });
+        console.log(`[Leaves] Found ${leaves.length} records for ${req.user.role} (${req.user.id}) in college: ${req.user.college}`);
+        
+        // Redact reason for faculty seeing others' leaves
+        if (req.user.role === 'faculty') {
+            leaves = leaves.map(l => {
+                const leaveObj = l.toObject();
+                // If not the owner, hide the reason
+                if (leaveObj.userId.toString() !== req.user.id) {
+                    leaveObj.reason = "Faculty on Leave"; // Redact but keep a generic message
+                }
+                return leaveObj;
+            });
+        }
         res.json(leaves);
     } catch (error) {
         console.error("Fetch leaves error:", error);

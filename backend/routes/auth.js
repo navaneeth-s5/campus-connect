@@ -200,6 +200,34 @@ router.put('/assign-hod', auth, async (req, res) => {
   }
 });
 
+router.put('/profile', auth, async (req, res) => {
+  const { name, password } = req.body;
+  try {
+    const user = await User.findById(req.user.id);
+    if (!user) return res.status(404).json({ error: 'User not found' });
+
+    if (name) user.name = name;
+    if (password) {
+      const salt = await bcrypt.genSalt(10);
+      user.password = await bcrypt.hash(password, salt);
+    }
+    
+    await user.save();
+    res.json({ 
+      success: true, 
+      user: { 
+        id: user._id, 
+        name: user.name, 
+        rollNumber: user.rollNumber, 
+        college: user.college, 
+        role: user.role 
+      } 
+    });
+  } catch (err) {
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 router.delete('/users/:id', auth, async (req, res) => {
   if (req.user.role !== 'admin') return res.status(403).json({ error: 'Unauthorized' });
   try {

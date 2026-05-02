@@ -12,7 +12,7 @@ const leaveSchema = new mongoose.Schema({
     date: { type: String, required: true },
     slots: [{
       hour: { type: Number, required: true },
-      replacementId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+      replacementId: { type: String, ref: 'User' },
       replacementName: { type: String }
     }]
   }],

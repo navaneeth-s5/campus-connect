@@ -9,6 +9,7 @@ import { StatusBadge } from "@/components/StatusBadge";
 import { toast } from "sonner";
 import { Calendar, PlusCircle, Search, Clock, ClipboardList, UserCog } from "lucide-react";
 import { eachDayOfInterval, format, parseISO } from "date-fns";
+import { PaginatedSection } from "@/components/PaginatedSection";
 
 export default function LeaveManagement() {
   const { user } = useAuth();
@@ -83,7 +84,7 @@ export default function LeaveManagement() {
       const isSunday = parseISO(date).getDay() === 0;
       return {
         date,
-        slots: multiDaySchedule[date].filter((s: any) => s.replacementId),
+        slots: multiDaySchedule[date].filter((s: any) => s.replacementId || s.replacementName === "Free Hour / No Class"),
         isSunday
       };
     });
@@ -111,6 +112,16 @@ export default function LeaveManagement() {
   };
 
   const updateSlot = (date: string, hourIndex: number, facultyId: string) => {
+    if (facultyId === "free") {
+      const newSchedule = { ...multiDaySchedule };
+      newSchedule[date][hourIndex] = { 
+        ...newSchedule[date][hourIndex], 
+        replacementId: "", 
+        replacementName: "Free Hour / No Class" 
+      };
+      setMultiDaySchedule(newSchedule);
+      return;
+    }
     const faculty = facultyList.find(f => f._id === facultyId);
     const newSchedule = { ...multiDaySchedule };
     newSchedule[date][hourIndex] = { 
@@ -200,6 +211,16 @@ export default function LeaveManagement() {
                               />
                               
                               <div className="absolute z-10 top-full left-0 right-0 mt-1 bg-popover border border-border rounded-md shadow-md max-h-40 overflow-y-auto hidden group-focus-within:block">
+                                <div
+                                  className="p-2 text-sm hover:bg-orange-50 text-orange-600 cursor-pointer flex items-center gap-2 font-bold border-b"
+                                  onMouseDown={(e) => {
+                                    e.preventDefault();
+                                    updateSlot(date, idx, "free");
+                                  }}
+                                >
+                                  <Clock className="h-3 w-3" />
+                                  <span>Free Hour / No Class</span>
+                                </div>
                                 {(() => {
                                   const filtered = facultyList.filter(f =>
                                     slot.replacementName && !slot.replacementId
@@ -248,52 +269,61 @@ export default function LeaveManagement() {
           </div>
           {loading ? (
             <div className="p-8 text-center text-muted-foreground">Loading...</div>
-          ) : leaves.length === 0 ? (
-            <div className="p-8 text-center text-muted-foreground">No leaves applied yet.</div>
           ) : (
-            <div className="divide-y">
-              {leaves.map((leave) => (
-                <div key={leave._id} className="p-6 space-y-4">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <div className="font-bold text-lg">{format(new Date(leave.startDate), "PP")} – {format(new Date(leave.endDate), "PP")}</div>
-                      <div className="text-sm text-muted-foreground italic mt-1">Reason: {leave.reason}</div>
-                    </div>
-                    <div className="flex flex-col items-end gap-2">
-                       <StatusBadge status={leave.status} />
-                       {leave.userId === user.id && ['pending_hod', 'pending_principal'].includes(leave.status) && (
-                         <Button size="sm" variant="ghost" className="text-red-500 hover:bg-red-50 h-7" onClick={() => revokeLeave(leave._id)}>
-                           Revoke
-                         </Button>
-                       )}
-                    </div>
-                  </div>
-
-                  <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-3 mt-4">
-                    {leave.schedule.map((day: any) => (
-                      <div key={day.date} className="p-3 border rounded-lg bg-muted/20 text-xs">
-                        <div className="font-bold mb-2 border-b pb-1 flex items-center gap-1">
-                          <Clock className="h-3 w-3" /> {format(parseISO(day.date), "MMM d, eee")}
+            <div className="p-6">
+              <PaginatedSection
+                items={leaves.filter(l => l.userId === user?.id)}
+                searchPlaceholder="Search by reason or status..."
+                renderItem={(paginatedLeaves) => (
+                  <div className="divide-y border rounded-xl overflow-hidden">
+                    {paginatedLeaves.map((leave) => (
+                      <div key={leave._id} className="p-6 space-y-4 hover:bg-muted/10 transition-colors">
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <div className="font-bold text-lg">{format(new Date(leave.startDate), "PP")} – {format(new Date(leave.endDate), "PP")}</div>
+                            <div className="text-sm text-muted-foreground italic mt-1">Reason: {leave.reason}</div>
+                          </div>
+                          <div className="flex flex-col items-end gap-2">
+                             <StatusBadge status={leave.status} />
+                             {leave.userId === user.id && ['pending_hod', 'pending_principal'].includes(leave.status) && (
+                               <Button size="sm" variant="ghost" className="text-red-500 hover:bg-red-50 h-7" onClick={() => revokeLeave(leave._id)}>
+                                 Revoke
+                               </Button>
+                             )}
+                          </div>
                         </div>
-                        <div className="space-y-1">
-                          {day.slots.map((s: any) => (
-                            <div key={s.hour} className="flex justify-between">
-                              <span className="text-muted-foreground">Hour {s.hour}:</span>
-                              <span className="font-medium">{s.replacementName}</span>
+
+                        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-3 mt-4">
+                          {leave.schedule.map((day: any) => (
+                            <div key={day.date} className="p-3 border rounded-lg bg-muted/20 text-xs">
+                              <div className="font-bold mb-2 border-b pb-1 flex items-center gap-1">
+                                <Clock className="h-3 w-3" /> {format(parseISO(day.date), "MMM d, eee")}
+                              </div>
+                              <div className="space-y-1">
+                                {day.slots.map((s: any) => (
+                                  <div key={s.hour} className="flex justify-between">
+                                    <span className="text-muted-foreground">Hour {s.hour}:</span>
+                                    <span className="font-medium">{s.replacementName}</span>
+                                  </div>
+                                ))}
+                              </div>
                             </div>
                           ))}
                         </div>
+
+                        {leave.actingHODName && (
+                          <div className="text-xs text-blue-700 bg-blue-50 p-2 rounded border border-blue-100 flex items-center gap-2">
+                             <UserCog className="h-4 w-4" /> <strong>Charge Transfer:</strong> {leave.actingHODName} is Acting HOD for this period.
+                          </div>
+                        )}
                       </div>
                     ))}
+                    {paginatedLeaves.length === 0 && (
+                      <div className="p-12 text-center text-muted-foreground italic">No leave applications found.</div>
+                    )}
                   </div>
-
-                  {leave.actingHODName && (
-                    <div className="text-xs text-blue-700 bg-blue-50 p-2 rounded border border-blue-100 flex items-center gap-2">
-                       <UserCog className="h-4 w-4" /> <strong>Charge Transfer:</strong> {leave.actingHODName} is Acting HOD for this period.
-                    </div>
-                  )}
-                </div>
-              ))}
+                )}
+              />
             </div>
           )}
         </div>

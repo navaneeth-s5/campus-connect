@@ -71,8 +71,6 @@ async function startServer() {
     const mongod = await MongoMemoryServer.create({
       instance: {
         port: 27017,
-        dbPath: dataPath,
-        storageEngine: 'wiredTiger',
         ip: '0.0.0.0'
       }
     });
