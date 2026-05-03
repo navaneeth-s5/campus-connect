@@ -26,6 +26,7 @@ import LMSAdmin from "./pages/LMSAdmin.tsx";
 import KioskBrowser from "./pages/KioskBrowser.tsx";
 import LeaveManagement from "./pages/LeaveManagement.tsx";
 import Profile from "./pages/Profile.tsx";
+import CampusBlog from "./pages/CampusBlog.tsx";
 import { CampusBuddy } from "@/components/CampusBuddy";
 
 
@@ -160,6 +161,14 @@ const App = () => (
                 element={
                   <ProtectedRoute roles={["student", "faculty", "admin", "principal", "guest"]}>
                     <Profile />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/blog"
+                element={
+                  <ProtectedRoute roles={["student", "faculty", "admin", "principal", "guest"]}>
+                    <CampusBlog />
                   </ProtectedRoute>
                 }
               />

@@ -11,6 +11,7 @@ const ticketRoutes = require('./routes/tickets');
 const lmsRoutes = require('./routes/lms');
 const aiRoutes = require('./routes/ai');
 const leaveRoutes = require('./routes/leaves');
+const blogRoutes = require('./routes/blogs');
 
 
 const app = express();
@@ -28,6 +29,7 @@ app.use('/api/tickets', ticketRoutes);
 app.use('/api/lms', lmsRoutes);
 app.use('/api/ai', aiRoutes);
 app.use('/api/leaves', leaveRoutes);
+app.use('/api/blogs', blogRoutes);
 
 
 const { MongoMemoryServer } = require('mongodb-memory-server');

@@ -26,6 +26,7 @@ import { toast } from "sonner";
 const navByRole = {
   student: [
     { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+    { to: "/blog", label: "Campus Blog", icon: FileText },
     { to: "/lms", label: "Campus LMS", icon: BookOpen },
     { to: "/book", label: "Book Facility", icon: CalendarPlus },
     { to: "/calendar", label: "Calendar", icon: CalendarDays },
@@ -35,6 +36,7 @@ const navByRole = {
   ],
   faculty: [
     { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+    { to: "/blog", label: "Campus Blog", icon: FileText },
     { to: "/lms", label: "Campus LMS", icon: BookOpen },
     { to: "/book", label: "Book Facility", icon: CalendarPlus },
     { to: "/calendar", label: "Calendar", icon: CalendarDays },
@@ -45,6 +47,7 @@ const navByRole = {
   ],
   admin: [
     { to: "/admin", label: "Admin Panel", icon: ShieldCheck },
+    { to: "/blog", label: "Campus Blog", icon: FileText },
     { to: "/lms", label: "Campus LMS", icon: BookOpen },
     { to: "/calendar", label: "Calendar", icon: CalendarDays },
     { to: "/admin/usage", label: "Usage Stats", icon: BarChart3 },
@@ -52,11 +55,13 @@ const navByRole = {
   ],
   principal: [
     { to: "/principal", label: "Executive Dashboard", icon: Briefcase },
+    { to: "/blog", label: "Campus Blog", icon: FileText },
     { to: "/calendar", label: "Calendar", icon: CalendarDays },
     { to: "/support", label: "IT Helpdesk", icon: LifeBuoy },
   ],
   guest: [
     { to: "/dashboard", label: "Visitor Home", icon: LayoutDashboard },
+    { to: "/blog", label: "Campus Blog", icon: FileText },
     { to: "/book", label: "Register Enquiry", icon: CalendarPlus },
   ],
 } as const;
