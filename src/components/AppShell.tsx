@@ -14,6 +14,8 @@ import {
   LifeBuoy,
   CalendarDays,
   BookOpen,
+  Newspaper,
+  Rss,
   Menu,
   X,
 } from "lucide-react";
@@ -26,17 +28,16 @@ import { toast } from "sonner";
 const navByRole = {
   student: [
     { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-    { to: "/blog", label: "Campus Blog", icon: FileText },
     { to: "/lms", label: "Campus LMS", icon: BookOpen },
     { to: "/book", label: "Book Facility", icon: CalendarPlus },
     { to: "/calendar", label: "Calendar", icon: CalendarDays },
     { to: "/my-bookings", label: "My Bookings", icon: ListChecks },
     { to: "/submissions", label: "Submissions", icon: FileText },
     { to: "/support", label: "IT Helpdesk", icon: LifeBuoy },
+    { to: "/blog", label: "Campus Blog", icon: Newspaper },
   ],
   faculty: [
     { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-    { to: "/blog", label: "Campus Blog", icon: FileText },
     { to: "/lms", label: "Campus LMS", icon: BookOpen },
     { to: "/book", label: "Book Facility", icon: CalendarPlus },
     { to: "/calendar", label: "Calendar", icon: CalendarDays },
@@ -44,25 +45,26 @@ const navByRole = {
     { to: "/submissions", label: "Submissions", icon: FileText },
     { to: "/faculty-assets", label: "Manage Assets", icon: Building },
     { to: "/support", label: "IT Helpdesk", icon: LifeBuoy },
+    { to: "/blog", label: "Campus Blog", icon: Newspaper },
   ],
   admin: [
     { to: "/admin", label: "Admin Panel", icon: ShieldCheck },
-    { to: "/blog", label: "Campus Blog", icon: FileText },
     { to: "/lms", label: "Campus LMS", icon: BookOpen },
     { to: "/calendar", label: "Calendar", icon: CalendarDays },
     { to: "/admin/usage", label: "Usage Stats", icon: BarChart3 },
     { to: "/support", label: "IT Helpdesk", icon: LifeBuoy },
+    { to: "/blog", label: "Campus Blog", icon: Newspaper },
   ],
   principal: [
     { to: "/principal", label: "Executive Dashboard", icon: Briefcase },
-    { to: "/blog", label: "Campus Blog", icon: FileText },
     { to: "/calendar", label: "Calendar", icon: CalendarDays },
     { to: "/support", label: "IT Helpdesk", icon: LifeBuoy },
+    { to: "/blog", label: "Campus Blog", icon: Newspaper },
   ],
   guest: [
     { to: "/dashboard", label: "Visitor Home", icon: LayoutDashboard },
-    { to: "/blog", label: "Campus Blog", icon: FileText },
     { to: "/book", label: "Register Enquiry", icon: CalendarPlus },
+    { to: "/blog", label: "Campus Blog", icon: Newspaper },
   ],
 } as const;
 
